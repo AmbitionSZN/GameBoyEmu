@@ -1,3 +1,6 @@
-int main(int argc, char **argv) {
+#include "cart.h"
 
-} 
+int main() {
+	LoadCartridge("../roms/Pokemon Red.gb");
+
+}

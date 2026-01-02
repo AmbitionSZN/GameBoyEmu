@@ -1,21 +1,31 @@
 #pragma once
 
-#include <cstdint>
+#include <stdint.h>
 
 typedef struct {
 	uint8_t Entry[4];
 	uint8_t Logo[0x30];
-	uint8_t Title[11];
-	uint8_t ManCode[4];
-	uint8_t CGBFlag;
-	uint8_t NewLicCode[2];
+	char Title[16];
+	uint16_t NewLicCode;
 	uint8_t SGBFlag;
-	uint8_t CartType;
+	uint8_t Type;
 	uint8_t RomSize;
 	uint8_t RamSize;
 	uint8_t DestinationCode;
 	uint8_t OldLicCode;
-	uint8_t MaskRomVerNumber;
+	uint8_t Version;
 	uint8_t HeaderChecksum;
-	uint8_t GlobalChecksum[2];
-} Cart_Header;
+	uint16_t GlobalChecksum;
+	
+} CartHeader;
+
+typedef struct {
+	uint32_t RomSize;
+	uint8_t *RomData;
+	CartHeader *Header;
+} Cartridge;
+
+
+void LoadCartridge(char *file);
+
+
