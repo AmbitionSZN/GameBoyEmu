@@ -26,6 +26,6 @@ typedef struct {
 } Cartridge;
 
 
-void LoadCartridge(char *file);
+Cartridge LoadCartridge(char *file);
 
 

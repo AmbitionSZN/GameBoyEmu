@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void LoadCartridge(char *file) {
+Cartridge LoadCartridge(char *file) {
     Cartridge cart;
     FILE *fptr;
     fptr = fopen(file, "r");
@@ -21,9 +21,10 @@ void LoadCartridge(char *file) {
 
     printf("Cartridge Loaded:\n");
     printf("\t Title    : %s\n", cart.Header->Title);
-    printf("\t Type     : %X\n", cart.Header->Type);
-    printf("\t ROM Size : %u\n", cart.Header->RomSize);
+    printf("\t Type     : %2.2X\n", cart.Header->Type);
+    printf("\t ROM Size : %u KB\n", 32 << cart.Header->RomSize);
     printf("\t RAM Size : %2.2X\n", cart.Header->RamSize);
     printf("\t LIC Code : %X\n", cart.Header->OldLicCode);
     printf("\t ROM Vers : %2.2X\n", cart.Header->Version);
+	return cart;
 }
