@@ -8,6 +8,7 @@ int main() {
 	CPU cpu;
 	cpu.Regs.PC = 0x101;
 	Cartridge cart = LoadCartridge("../roms/Tetris.gb");
+	opcodesJsonParser("../Opcodes.json");
 	
 	uint8_t opcode = busRead(cpu.Regs.PC, cart);
 //	printf("opcode: %2.2X\n", opcode);

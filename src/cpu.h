@@ -2,6 +2,7 @@
 
 #include "cart.h"
 #include <stdint.h>
+#include <stdbool.h>
 typedef struct {
     uint8_t A;
     uint8_t F;
@@ -73,12 +74,15 @@ typedef enum {
     IN_SET
 } Mnemonics;
 
+void opcodesJsonParser(char* file);
+
 
 typedef struct {
 	uint8_t Mnemonic;
 	uint8_t Bytes;
 	uint8_t cycles;
 	uint8_t Flags[4];
+	bool Immediate;
 } Instruction;
 
 

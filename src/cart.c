@@ -5,7 +5,7 @@
 Cartridge LoadCartridge(char *file) {
     Cartridge cart;
     FILE *fptr;
-    fptr = fopen(file, "r");
+    fptr = fopen(file, "rb");
     if (fptr == NULL) {
         printf("failed to open rom: %s", file);
         exit(EXIT_FAILURE);
