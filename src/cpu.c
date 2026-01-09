@@ -96,14 +96,26 @@ DataType GetOperandType(cJSON *operand, char *mnemonic) {
     if (strcmp(op, "NC") == 0) {
         return DT_CC_NC;
     }
+    if (strcmp(op, "$00") == 0) {
+        return DT_RST0;
+    }
     if (strcmp(op, "$08") == 0) {
         return DT_RST8;
+    }
+    if (strcmp(op, "$10") == 0) {
+        return DT_RST10;
     }
     if (strcmp(op, "$18") == 0) {
         return DT_RST18;
     }
+    if (strcmp(op, "$20") == 0) {
+        return DT_RST20;
+    }
     if (strcmp(op, "$28") == 0) {
         return DT_RST28;
+    }
+    if (strcmp(op, "$30") == 0) {
+        return DT_RST30;
     }
     if (strcmp(op, "$38") == 0) {
         return DT_RST38;
