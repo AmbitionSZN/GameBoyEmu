@@ -179,6 +179,7 @@ typedef enum {
 void opcodesJsonParser(char *file);
 
 typedef struct {
+	uint8_t Opcode;
     char *Mnemonic;
     uint8_t Bytes;
     uint8_t Cycles[2];
@@ -191,7 +192,7 @@ typedef struct {
 
 typedef struct {
     CPURegisters Regs;
-    Instruction CurInstr;
+    Instruction* CurInstr;
 } CPU;
 
 void fetchInstruction(CPU *cpu, Cartridge cart);

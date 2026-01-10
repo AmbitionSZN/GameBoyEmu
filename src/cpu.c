@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-Instruction Instructions[512];
+Instruction instructions[512];
 
 DataType GetOperandType(cJSON *operand, char *mnemonic) {
     char *op = operand->child->valuestring;
@@ -147,16 +147,20 @@ void opcodesJsonParser(char *file) {
     cJSON *json = cJSON_Parse(str);
     cJSON *unprefixed = json->child;
     cJSON *opcode = NULL;
-    printf("%i\n", cJSON_GetArraySize(unprefixed));
     for (size_t i = 0; i < cJSON_GetArraySize(unprefixed); i++) {
         Instruction instruction;
+        instruction.Opcode = i;
         if (!opcode) {
             opcode = unprefixed->child;
         } else {
             opcode = opcode->next;
         }
-        instruction.Mnemonic =
-            cJSON_GetObjectItem(opcode, "mnemonic")->valuestring;
+        size_t mnemonicLen =
+            strlen(cJSON_GetObjectItem(opcode, "mnemonic")->valuestring);
+        instruction.Mnemonic = malloc(mnemonicLen + 1);
+        strcpy(instruction.Mnemonic,
+               cJSON_GetObjectItem(opcode, "mnemonic")->valuestring);
+
         instruction.Bytes = cJSON_GetObjectItem(opcode, "bytes")->valueint;
         cJSON *jsonCycles = cJSON_GetObjectItem(opcode, "cycles");
         if (cJSON_GetArraySize(jsonCycles) == 2) {
@@ -174,17 +178,14 @@ void opcodesJsonParser(char *file) {
         }
         if (operSize == 1) {
             cJSON *op1 = jsonOperands->child;
-            instruction.Operand1 =
-                GetOperandType(op1, instruction.Mnemonic);
+            instruction.Operand1 = GetOperandType(op1, instruction.Mnemonic);
             instruction.Operand2 = DT_NONE;
         }
         if (operSize == 2) {
             cJSON *op1 = jsonOperands->child;
             cJSON *op2 = jsonOperands->child->next;
-            instruction.Operand1 =
-                GetOperandType(op1, instruction.Mnemonic);
-            instruction.Operand2 =
-                GetOperandType(op2, instruction.Mnemonic);
+            instruction.Operand1 = GetOperandType(op1, instruction.Mnemonic);
+            instruction.Operand2 = GetOperandType(op2, instruction.Mnemonic);
         }
         cJSON *jsonFlags = cJSON_GetObjectItem(opcode, "flags");
         cJSON *jsonFlag = NULL;
@@ -231,7 +232,9 @@ void opcodesJsonParser(char *file) {
                 continue;
             }
         }
+        instructions[i] = instruction;
     }
+    cJSON_Delete(json);
 };
 
 void jump(CPU *cpu, Cartridge cart) {
@@ -239,11 +242,11 @@ void jump(CPU *cpu, Cartridge cart) {
     uint16_t lo = cart.RomData[cpu->Regs.PC + 1];
     uint16_t hi = cart.RomData[cpu->Regs.PC + 2];
     pc = lo | (hi << 8);
-    printf("pc: %2.2X", pc);
 }
 
 void fetchInstruction(CPU *cpu, Cartridge cart) {
     uint8_t opcode = busRead(cpu->Regs.PC, cart);
-
-    jump(cpu, cart);
+    cpu->CurInstr = &instructions[opcode];
+    printf("Opcode: %2.2X\n", cpu->CurInstr->Opcode);
+    printf("Mnemonic: %s\n", cpu->CurInstr->Mnemonic);
 }
