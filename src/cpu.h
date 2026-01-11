@@ -185,6 +185,10 @@ typedef enum {
 
 void opcodesJsonParser(char *file);
 
+uint16_t reverseEndian(uint16_t n);
+
+uint16_t read16BitReg(uint8_t* reg);
+
 typedef struct {
 	uint16_t Opcode;
     char *Mnemonic;

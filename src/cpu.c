@@ -238,7 +238,17 @@ void opcodesJsonParser(char *file) {
     cJSON_Delete(json);
 };
 
+uint16_t reverseEndian(uint16_t n) {
+    return ((n & 0xFF00) >> 8) | ((n & 0x00FF) << 8);
+}
 
+uint16_t read16BitReg(uint8_t* reg) {
+	return reverseEndian(((uint16_t*)reg)[0]);
+}
+
+bool CheckFlag(CPU *cpu, Flag flag) {
+    return (cpu->Regs.F & (1 << flag)) != 0;
+}
 
 void fetchInstruction(CPU *cpu, Cartridge *cart) {
     uint16_t opcode = busRead(cpu->Regs.PC, cart);
@@ -253,10 +263,6 @@ void fetchInstruction(CPU *cpu, Cartridge *cart) {
     printf("PC: %X\n", cpu->Regs.PC);
 }
 
-bool CheckFlag(CPU *cpu, Flag flag) {
-    return (cpu->Regs.F & (1 << flag)) != 0;
-}
-
 void execute(CPU *cpu, Cartridge *cart) {
 	Instruction* instr = cpu->CurInstr;
 	if (instr->Opcode == 0) {
@@ -266,4 +272,10 @@ void execute(CPU *cpu, Cartridge *cart) {
 		JP(cpu, cart);
 		return;
 	}
+
+	printf("Instruction not implemented:\n");
+    printf("\tOpcode: %2.2X\n", cpu->CurInstr->Opcode);
+    printf("\tMnemonic: %s\n", cpu->CurInstr->Mnemonic);
+    printf("\tPC: %X\n", cpu->Regs.PC);
+	exit(EXIT_FAILURE);
 }

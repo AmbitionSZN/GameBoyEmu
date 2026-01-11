@@ -9,12 +9,8 @@ int main() {
     cpu.Regs.PC = 0x100;
     Cartridge cart = LoadCartridge("../roms/Tetris.gb");
     opcodesJsonParser("../Opcodes.json");
+	while (1) {
     fetchInstruction(&cpu, &cart);
 	execute(&cpu, &cart);
-    fetchInstruction(&cpu, &cart);
-	execute(&cpu, &cart);
-    fetchInstruction(&cpu, &cart);
-	execute(&cpu, &cart);
-    fetchInstruction(&cpu, &cart);
-	
+	}
 }

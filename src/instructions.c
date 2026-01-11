@@ -4,29 +4,31 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
 void JP(CPU *cpu, Cartridge *cart) {
     bool b;
     switch (cpu->CurInstr->Operand1) {
-	case DT_A16:
-		b = true;
-		break;
+    case DT_HL:
+		cpu->Regs.PC = read16BitReg(&cpu->Regs.H);
+		return;
+    case DT_A16:
+        b = true;
+        break;
     case DT_CC_Z:
         b = CheckFlag(cpu, FLAG_Z);
-		break;
+        break;
     case DT_CC_C:
         b = CheckFlag(cpu, FLAG_C);
-		break;
+        break;
     case DT_CC_NZ:
         b = !CheckFlag(cpu, FLAG_Z);
-		break;
+        break;
     case DT_CC_NC:
         b = !CheckFlag(cpu, FLAG_C);
-		break;
+        break;
     default:
         printf("error in JP\n");
         printf("%i\n", cpu->CurInstr->Operand1);
-		
+
         exit(EXIT_FAILURE);
     }
     if (b) {
