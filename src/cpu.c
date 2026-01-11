@@ -1,4 +1,5 @@
 #include "cpu.h"
+#include "instructions.h"
 #include "bus.h"
 #include "cJSON.h"
 #include "cart.h"
@@ -196,39 +197,39 @@ void opcodesJsonParser(char *file) {
                 jsonFlag = jsonFlag->next;
             }
             if (cJSON_IsString(jsonFlag) == false && jsonFlag->valueint == 0) {
-                instruction.Flags[j] = FLAG_CLEAR;
+                instruction.Flags[j] = FLAGINSTR_CLEAR;
                 continue;
             }
             if (cJSON_IsString(jsonFlag) == false && jsonFlag->valueint == 1) {
-                instruction.Flags[j] = FLAG_SET;
+                instruction.Flags[j] = FLAGINSTR_SET;
                 continue;
             }
             if (jsonFlag->valuestring[0] == '0') {
-                instruction.Flags[j] = FLAG_CLEAR;
+                instruction.Flags[j] = FLAGINSTR_CLEAR;
                 continue;
             }
             if (jsonFlag->valuestring[0] == '1') {
-                instruction.Flags[j] = FLAG_SET;
+                instruction.Flags[j] = FLAGINSTR_SET;
                 continue;
             }
             if (jsonFlag->valuestring[0] == '-') {
-                instruction.Flags[j] = FLAG_NONE;
+                instruction.Flags[j] = FLAGINSTR_NONE;
                 continue;
             }
             if (jsonFlag->valuestring[0] == 'Z') {
-                instruction.Flags[j] = FLAG_Z;
+                instruction.Flags[j] = FLAGINSTR_Z;
                 continue;
             }
             if (jsonFlag->valuestring[0] == 'N') {
-                instruction.Flags[j] = FLAG_N;
+                instruction.Flags[j] = FLAGINSTR_N;
                 continue;
             }
             if (jsonFlag->valuestring[0] == 'H') {
-                instruction.Flags[j] = FLAG_H;
+                instruction.Flags[j] = FLAGINSTR_H;
                 continue;
             }
             if (jsonFlag->valuestring[0] == 'C') {
-                instruction.Flags[j] = FLAG_C;
+                instruction.Flags[j] = FLAGINSTR_C;
                 continue;
             }
         }
@@ -237,16 +238,32 @@ void opcodesJsonParser(char *file) {
     cJSON_Delete(json);
 };
 
-void jump(CPU *cpu, Cartridge cart) {
-    uint16_t pc;
-    uint16_t lo = cart.RomData[cpu->Regs.PC + 1];
-    uint16_t hi = cart.RomData[cpu->Regs.PC + 2];
-    pc = lo | (hi << 8);
-}
 
-void fetchInstruction(CPU *cpu, Cartridge cart) {
-    uint8_t opcode = busRead(cpu->Regs.PC, cart);
+
+void fetchInstruction(CPU *cpu, Cartridge *cart) {
+    uint16_t opcode = busRead(cpu->Regs.PC, cart);
+	if (opcode > 255) {
+		printf("Instruction not implemented: %2.2X", opcode);
+		exit(EXIT_FAILURE);
+	}
     cpu->CurInstr = &instructions[opcode];
+	cpu->Regs.PC++;
     printf("Opcode: %2.2X\n", cpu->CurInstr->Opcode);
     printf("Mnemonic: %s\n", cpu->CurInstr->Mnemonic);
+    printf("PC: %X\n", cpu->Regs.PC);
+}
+
+bool CheckFlag(CPU *cpu, Flag flag) {
+    return (cpu->Regs.F & (1 << flag)) != 0;
+}
+
+void execute(CPU *cpu, Cartridge *cart) {
+	Instruction* instr = cpu->CurInstr;
+	if (instr->Opcode == 0) {
+		return;
+	}
+	if (strcmp(instr->Mnemonic, "JP") == 0) {
+		JP(cpu, cart);
+		return;
+	}
 }

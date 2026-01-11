@@ -43,13 +43,20 @@ typedef enum {
 } AddressingMode;
 
 typedef enum {
-    FLAG_NONE,
-    FLAG_CLEAR,
-    FLAG_SET,
-    FLAG_Z,
-    FLAG_N,
-    FLAG_H,
-    FLAG_C,
+	FLAG_Z = 7,
+	FLAG_N = 6,
+	FLAG_H = 5,
+	FLAG_C = 4,
+} Flag;
+
+typedef enum {
+    FLAGINSTR_NONE,
+    FLAGINSTR_CLEAR,
+    FLAGINSTR_SET,
+    FLAGINSTR_Z,
+    FLAGINSTR_N,
+    FLAGINSTR_H,
+    FLAGINSTR_C,
 } FlagInstruction;
 
 typedef enum {
@@ -179,7 +186,7 @@ typedef enum {
 void opcodesJsonParser(char *file);
 
 typedef struct {
-	uint8_t Opcode;
+	uint16_t Opcode;
     char *Mnemonic;
     uint8_t Bytes;
     uint8_t Cycles[2];
@@ -195,5 +202,9 @@ typedef struct {
     Instruction* CurInstr;
 } CPU;
 
-void fetchInstruction(CPU *cpu, Cartridge cart);
-void execute(CPU *cpu);
+
+bool CheckFlag(CPU *cpu, Flag flag);
+
+void fetchInstruction(CPU *cpu, Cartridge *cart);
+
+void execute(CPU *cpu, Cartridge *cart);

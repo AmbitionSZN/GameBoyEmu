@@ -7,5 +7,7 @@ add_executable(${PROJECT_NAME}
 	src/cart.c
 	src/bus.c
 	src/cpu.c
+	src/instructions.c
+
 	src/cJSON.c
 )

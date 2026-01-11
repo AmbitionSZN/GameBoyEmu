@@ -5,10 +5,16 @@
 #include <stdio.h>
 
 int main() {
-	CPU cpu;
-	cpu.Regs.PC = 0x101;
-	Cartridge cart = LoadCartridge("../roms/Tetris.gb");
-	opcodesJsonParser("../Opcodes.json");
-	fetchInstruction(&cpu, cart);
-
+    CPU cpu;
+    cpu.Regs.PC = 0x100;
+    Cartridge cart = LoadCartridge("../roms/Tetris.gb");
+    opcodesJsonParser("../Opcodes.json");
+    fetchInstruction(&cpu, &cart);
+	execute(&cpu, &cart);
+    fetchInstruction(&cpu, &cart);
+	execute(&cpu, &cart);
+    fetchInstruction(&cpu, &cart);
+	execute(&cpu, &cart);
+    fetchInstruction(&cpu, &cart);
+	
 }
