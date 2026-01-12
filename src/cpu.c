@@ -1,8 +1,8 @@
 #include "cpu.h"
-#include "instructions.h"
 #include "bus.h"
 #include "cJSON.h"
 #include "cart.h"
+#include "instructions.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -238,44 +238,139 @@ void opcodesJsonParser(char *file) {
     cJSON_Delete(json);
 };
 
-uint16_t reverseEndian(uint16_t n) {
-    return ((n & 0xFF00) >> 8) | ((n & 0x00FF) << 8);
+uint16_t reverseEndian(const uint16_t *n) {
+    uint16_t foo = ((n[0]) >> 8) | ((n[0]) << 8);
+    return foo;
 }
 
-uint16_t read16BitReg(uint8_t* reg) {
-	return reverseEndian(((uint16_t*)reg)[0]);
-}
-
-bool CheckFlag(CPU *cpu, Flag flag) {
-    return (cpu->Regs.F & (1 << flag)) != 0;
-}
+bool CheckFlag(CPU *cpu, Flag flag) { return (cpu->Regs.F & (1 << flag)) != 0; }
 
 void fetchInstruction(CPU *cpu, Cartridge *cart) {
     uint16_t opcode = busRead(cpu->Regs.PC, cart);
-	if (opcode > 255) {
-		printf("Instruction not implemented: %2.2X", opcode);
-		exit(EXIT_FAILURE);
-	}
+    if (opcode > 255) {
+        printf("Instruction not implemented: %2.2X", opcode);
+        exit(EXIT_FAILURE);
+    }
     cpu->CurInstr = &instructions[opcode];
-	cpu->Regs.PC++;
+    cpu->Regs.PC++;
     printf("Opcode: %2.2X\n", cpu->CurInstr->Opcode);
     printf("Mnemonic: %s\n", cpu->CurInstr->Mnemonic);
     printf("PC: %X\n", cpu->Regs.PC);
 }
 
 void execute(CPU *cpu, Cartridge *cart) {
-	Instruction* instr = cpu->CurInstr;
-	if (instr->Opcode == 0) {
-		return;
-	}
-	if (strcmp(instr->Mnemonic, "JP") == 0) {
-		JP(cpu, cart);
-		return;
-	}
+    Instruction *instr = cpu->CurInstr;
+    if (instr->Opcode == 0) {
 
-	printf("Instruction not implemented:\n");
-    printf("\tOpcode: %2.2X\n", cpu->CurInstr->Opcode);
-    printf("\tMnemonic: %s\n", cpu->CurInstr->Mnemonic);
-    printf("\tPC: %X\n", cpu->Regs.PC);
-	exit(EXIT_FAILURE);
+    } else if (strcmp(instr->Mnemonic, "JP") == 0) {
+        JP(cpu, cart);
+    } else if (strcmp(instr->Mnemonic, "XOR") == 0) {
+        XOR(cpu, cart);
+
+    } else if (strcmp(instr->Mnemonic, "DI") == 0) {
+        DI(cpu);
+
+    } else if (strcmp(instr->Mnemonic, "LD") == 0) {
+        LD(cpu, cart);
+
+    } else {
+
+        printf("Instruction not implemented:\n");
+        printf("\tOpcode: %2.2X\n", cpu->CurInstr->Opcode);
+        printf("\tMnemonic: %s\n", cpu->CurInstr->Mnemonic);
+        printf("\tPC: %X\n", cpu->Regs.PC);
+        exit(EXIT_FAILURE);
+    }
+}
+
+uint8_t *getRegisterU8(CPU *cpu, DataType reg) {
+    CPURegisters *regs = &cpu->Regs;
+    switch (reg) {
+    case DT_A:
+        return &regs->A;
+    case DT_F:
+        return &regs->F;
+    case DT_B:
+        return &regs->B;
+    case DT_C:
+        return &regs->C;
+    case DT_D:
+        return &regs->D;
+    case DT_E:
+        return &regs->E;
+    case DT_H:
+        return &regs->H;
+    case DT_L:
+        return &regs->L;
+    default:
+        return NULL;
+    }
+    return NULL;
+}
+
+uint16_t *getRegisterU16(CPU *cpu, DataType reg) {
+    CPURegisters *regs = &cpu->Regs;
+    switch (reg) {
+    case DT_AF:
+        return (uint16_t *)&regs->A;
+    case DT_BC:
+        return (uint16_t *)&regs->B;
+    case DT_DE:
+        return (uint16_t *)&regs->D;
+    case DT_HL:
+        return (uint16_t *)&regs->H;
+    case DT_SP:
+        return &regs->SP;
+    case DT_PC:
+        return &regs->PC;
+    default:
+        return NULL;
+    }
+    return NULL;
+}
+
+uint16_t readRegisterU16(CPU *cpu, DataType reg) {
+    CPURegisters *regs = &cpu->Regs;
+    switch (reg) {
+    case DT_AF:
+        return reverseEndian((uint16_t *)&regs->A);
+    case DT_BC:
+        return reverseEndian((uint16_t *)&regs->B);
+    case DT_DE:
+        return reverseEndian((uint16_t *)&regs->D);
+    case DT_HL:
+        return reverseEndian((uint16_t *)&regs->H);
+    case DT_SP:
+        return regs->SP;
+    case DT_PC:
+        return regs->PC;
+    default:
+        printf("error in readRegisterU16");
+        exit(EXIT_FAILURE);
+    }
+    printf("error in readRegisterU16");
+    exit(EXIT_FAILURE);
+}
+
+void writeRegisterU16(CPU *cpu, DataType reg, uint16_t val) {
+    CPURegisters *regs = &cpu->Regs;
+    switch (reg) {
+    case DT_AF:
+        *(uint16_t *)&regs->A = reverseEndian(&val);
+    case DT_BC:
+        *(uint16_t *)&regs->B = reverseEndian(&val);
+    case DT_DE:
+        *(uint16_t *)&regs->D = reverseEndian(&val);
+    case DT_HL:
+        *(uint16_t *)&regs->H = reverseEndian(&val);
+    case DT_SP:
+        regs->SP = val;
+    case DT_PC:
+    	regs->PC = val;
+    default:
+        printf("error in writeRegisterU16");
+        exit(EXIT_FAILURE);
+    }
+    printf("error in writeRegisterU16");
+    exit(EXIT_FAILURE);
 }

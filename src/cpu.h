@@ -3,6 +3,7 @@
 #include "cart.h"
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 typedef struct {
     uint8_t A;
@@ -143,10 +144,10 @@ typedef enum {
     DT_BC,
     DT_DE,
     DT_HL,
-	DT_HLI,
-	DT_HLD,
     DT_SP,
     DT_PC,
+	DT_HLI,
+	DT_HLD,
     DT_N8,
     DT_N16,
     DT_E8,
@@ -185,9 +186,8 @@ typedef enum {
 
 void opcodesJsonParser(char *file);
 
-uint16_t reverseEndian(uint16_t n);
+uint16_t reverseEndian(const uint16_t* n);
 
-uint16_t read16BitReg(uint8_t* reg);
 
 typedef struct {
 	uint16_t Opcode;
@@ -204,6 +204,7 @@ typedef struct {
 typedef struct {
     CPURegisters Regs;
     Instruction* CurInstr;
+	bool IMEFlag;
 } CPU;
 
 
@@ -212,3 +213,8 @@ bool CheckFlag(CPU *cpu, Flag flag);
 void fetchInstruction(CPU *cpu, Cartridge *cart);
 
 void execute(CPU *cpu, Cartridge *cart);
+
+uint8_t* getRegisterU8(CPU *cpu, DataType reg); 
+uint16_t* getRegisterU16(CPU *cpu, DataType reg); 
+uint16_t readRegisterU16(CPU *cpu, DataType reg);
+void writeRegisterU16(CPU *cpu, DataType reg, uint16_t val);

@@ -7,6 +7,7 @@
 int main() {
     CPU cpu;
     cpu.Regs.PC = 0x100;
+	cpu.Regs.A = 0x01;
     Cartridge cart = LoadCartridge("../roms/Tetris.gb");
     opcodesJsonParser("../Opcodes.json");
 	while (1) {
