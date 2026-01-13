@@ -86,18 +86,19 @@ void LD(CPU *cpu, Cartridge *cart) {
         break;
     case DT_N16:
         op2 = cart->RomData[regs->PC] | (cart->RomData[regs->PC + 1] << 8);
-		break;
+        break;
     case DT_AF ... DT_HL:
-	case DT_PC:
+    case DT_PC:
         op2U16 = readRegisterU16(cpu, instr->Operand2);
-		break;
-	case DT_SP:
-		if (instr->Operand1 == DT_HL) {
-			op2U16 = readRegisterU16(cpu, instr->Operand2);
-				break;
-			}
-		op2U16 = readRegisterU16(cpu, instr->Operand2) + *((int8_t *)&cart->RomData[regs->PC]);
-		break;
+        break;
+    case DT_SP:
+        if (instr->Operand1 == DT_HL) {
+            op2U16 = readRegisterU16(cpu, instr->Operand2);
+            break;
+        }
+        op2U16 = readRegisterU16(cpu, instr->Operand2) +
+                 *((int8_t *)&cart->RomData[regs->PC]);
+        break;
     default:
         printf("error in LD\n");
         exit(EXIT_FAILURE);
@@ -115,10 +116,10 @@ void LD(CPU *cpu, Cartridge *cart) {
         break;
     case DT_A16: {
         uint16_t addr = ((uint16_t)cart->RomData[regs->PC]) |
-                        ((uint16_t)cart->RomData[regs->PC + 1] >> 8);
-		op1 = &cart->RomData[addr];
+                        ((uint16_t)cart->RomData[regs->PC + 1] << 8);
+        op1 = &cart->RomData[addr];
         if (instr->Operand2 == DT_SP) {
-			*((uint16_t*)op1) = regs->SP;
+            *((uint16_t *)op1) = regs->SP;
             break;
         }
         *op1 = op2;
@@ -126,17 +127,38 @@ void LD(CPU *cpu, Cartridge *cart) {
     }
     case DT_AF ... DT_HLD:
         op1U16 = getRegisterU16(cpu, instr->Operand1);
-		writeRegisterU16(cpu, instr->Operand1, op2U16);
+        writeRegisterU16(cpu, instr->Operand1, op2U16);
         break;
     default:
         printf("error in LD\n");
         exit(EXIT_FAILURE);
     }
-	if (instr->Operand1 == DT_HLI || instr->Operand2 == DT_HLI) {
-		regs->PC += 1;
-	}
-	if (instr->Operand1 == DT_HLD || instr->Operand2 == DT_HLD) {
-		regs->PC -= 1;
-	}
+    if (instr->Operand1 == DT_HLI || instr->Operand2 == DT_HLI) {
+        regs->PC += 1;
+    } else if (instr->Operand1 == DT_HLD || instr->Operand2 == DT_HLD) {
+        regs->PC -= 1;
+    }
     regs->PC += instr->Bytes - 1;
 }
+
+void DEC(CPU *cpu, Cartridge *cart) {
+    Instruction *instr = cpu->CurInstr;
+    switch (instr->Operand1) {
+    case DT_A ... DT_L:
+        *getRegisterU8(cpu, instr->Operand1) -= 1;
+        break;
+    case DT_AF ... DT_PC: {
+        uint16_t *reg = getRegisterU16(cpu, instr->Operand1);
+        writeRegisterU16(cpu, instr->Operand1, reverseEndian(reg) - 1);
+        break;
+    case DT_A_HL: {
+        uint16_t addr = readRegisterU16(cpu, instr->Operand1);
+        cart->RomData[addr] -= 1;
+        break;
+    }
+    default:
+        printf("error in DEC\n");
+        exit(EXIT_FAILURE);
+    }
+    }
+};

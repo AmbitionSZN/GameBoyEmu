@@ -273,7 +273,9 @@ void execute(CPU *cpu, Cartridge *cart) {
     } else if (strcmp(instr->Mnemonic, "LD") == 0) {
         LD(cpu, cart);
 
-    } else {
+    }else if (strcmp(instr->Mnemonic, "DEC") == 0) {
+		DEC(cpu, cart);
+	} else {
 
         printf("Instruction not implemented:\n");
         printf("\tOpcode: %2.2X\n", cpu->CurInstr->Opcode);
