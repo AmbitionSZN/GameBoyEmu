@@ -87,8 +87,16 @@ void LD(CPU *cpu, Cartridge *cart) {
     case DT_N16:
         op2 = cart->RomData[regs->PC] | (cart->RomData[regs->PC + 1] << 8);
 		break;
-    case DT_AF ... DT_PC:
+    case DT_AF ... DT_HL:
+	case DT_PC:
         op2U16 = readRegisterU16(cpu, instr->Operand2);
+		break;
+	case DT_SP:
+		if (instr->Operand1 == DT_HL) {
+			op2U16 = readRegisterU16(cpu, instr->Operand2);
+				break;
+			}
+		op2U16 = readRegisterU16(cpu, instr->Operand2) + *((int8_t *)&cart->RomData[regs->PC]);
 		break;
     default:
         printf("error in LD\n");
@@ -124,5 +132,11 @@ void LD(CPU *cpu, Cartridge *cart) {
         printf("error in LD\n");
         exit(EXIT_FAILURE);
     }
+	if (instr->Operand1 == DT_HLI || instr->Operand2 == DT_HLI) {
+		regs->PC += 1;
+	}
+	if (instr->Operand1 == DT_HLD || instr->Operand2 == DT_HLD) {
+		regs->PC -= 1;
+	}
     regs->PC += instr->Bytes - 1;
 }
