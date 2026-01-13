@@ -7,6 +7,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+
+extern CPU cpu;
+extern Cartridge cart;
 
 Instruction instructions[512];
 
@@ -182,7 +186,7 @@ void opcodesJsonParser(char *file) {
             instruction.Operand1 = GetOperandType(op1, instruction.Mnemonic);
             instruction.Operand2 = DT_NONE;
         }
-        if (operSize == 2) {
+        if (operSize >= 2) {
             cJSON *op1 = jsonOperands->child;
             cJSON *op2 = jsonOperands->child->next;
             instruction.Operand1 = GetOperandType(op1, instruction.Mnemonic);
@@ -243,50 +247,55 @@ uint16_t reverseEndian(const uint16_t *n) {
     return foo;
 }
 
-bool CheckFlag(CPU *cpu, Flag flag) { return (cpu->Regs.F & (1 << flag)) != 0; }
+bool CheckFlag(Flag flag) { return (cpu.Regs.F & (1 << flag)) != 0; }
 
-void fetchInstruction(CPU *cpu, Cartridge *cart) {
-    uint16_t opcode = busRead(cpu->Regs.PC, cart);
+void fetchInstruction() {
+    uint16_t opcode = busRead(cpu.Regs.PC, &cart);
     if (opcode > 255) {
         printf("Instruction not implemented: %2.2X", opcode);
         exit(EXIT_FAILURE);
     }
-    cpu->CurInstr = &instructions[opcode];
-    cpu->Regs.PC++;
-    printf("Opcode: %2.2X\n", cpu->CurInstr->Opcode);
-    printf("Mnemonic: %s\n", cpu->CurInstr->Mnemonic);
-    printf("PC: %X\n", cpu->Regs.PC);
+    cpu.CurInstr = &instructions[opcode];
+    cpu.Regs.PC++;
+	
+	printf("=====\nFetched instruction:\n");
+    printf("\tOpcode: %2.2X\n", cpu.CurInstr->Opcode);
+    printf("\tMnemonic: %s\n", cpu.CurInstr->Mnemonic);
+    printf("\tPC: %X\n=====\n\n", cpu.Regs.PC);
 }
 
-void execute(CPU *cpu, Cartridge *cart) {
-    Instruction *instr = cpu->CurInstr;
+void execute() {
+    Instruction *instr = cpu.CurInstr;
     if (instr->Opcode == 0) {
 
     } else if (strcmp(instr->Mnemonic, "JP") == 0) {
-        JP(cpu, cart);
+        JP();
     } else if (strcmp(instr->Mnemonic, "XOR") == 0) {
-        XOR(cpu, cart);
+        XOR();
 
     } else if (strcmp(instr->Mnemonic, "DI") == 0) {
-        DI(cpu);
+        DI();
 
     } else if (strcmp(instr->Mnemonic, "LD") == 0) {
-        LD(cpu, cart);
+        LD();
 
     }else if (strcmp(instr->Mnemonic, "DEC") == 0) {
-		DEC(cpu, cart);
-	} else {
+		DEC();
+	} else if (strcmp(instr->Mnemonic, "JR") == 0) {
+		JR();
+	}else {
 
         printf("Instruction not implemented:\n");
-        printf("\tOpcode: %2.2X\n", cpu->CurInstr->Opcode);
-        printf("\tMnemonic: %s\n", cpu->CurInstr->Mnemonic);
-        printf("\tPC: %X\n", cpu->Regs.PC);
+        printf("\tOpcode: %2.2X\n", cpu.CurInstr->Opcode);
+        printf("\tMnemonic: %s\n", cpu.CurInstr->Mnemonic);
+        printf("\tPC: %X\n", cpu.Regs.PC);
         exit(EXIT_FAILURE);
     }
 }
 
-uint8_t *getRegisterU8(CPU *cpu, DataType reg) {
-    CPURegisters *regs = &cpu->Regs;
+
+uint8_t *getRegisterU8(DataType reg) {
+    CPURegisters *regs = &cpu.Regs;
     switch (reg) {
     case DT_A:
         return &regs->A;
@@ -310,8 +319,8 @@ uint8_t *getRegisterU8(CPU *cpu, DataType reg) {
     return NULL;
 }
 
-uint16_t *getRegisterU16(CPU *cpu, DataType reg) {
-    CPURegisters *regs = &cpu->Regs;
+uint16_t *getRegisterU16(DataType reg) {
+    CPURegisters *regs = &cpu.Regs;
     switch (reg) {
     case DT_AF:
         return (uint16_t *)&regs->A;
@@ -331,8 +340,8 @@ uint16_t *getRegisterU16(CPU *cpu, DataType reg) {
     return NULL;
 }
 
-uint16_t readRegisterU16(CPU *cpu, DataType reg) {
-    CPURegisters *regs = &cpu->Regs;
+uint16_t readRegisterU16(DataType reg) {
+    CPURegisters *regs = &cpu.Regs;
     switch (reg) {
     case DT_AF:
         return reverseEndian((uint16_t *)&regs->A);
@@ -355,8 +364,8 @@ uint16_t readRegisterU16(CPU *cpu, DataType reg) {
     }
 }
 
-void writeRegisterU16(CPU *cpu, DataType reg, uint16_t val) {
-    CPURegisters *regs = &cpu->Regs;
+void writeRegisterU16(DataType reg, uint16_t val) {
+    CPURegisters *regs = &cpu.Regs;
     switch (reg) {
     case DT_AF:
         *(uint16_t *)&regs->A = reverseEndian(&val);

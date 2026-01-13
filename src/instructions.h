@@ -6,8 +6,9 @@
 
 
 
-void JP(CPU *cpu, Cartridge *cart);
-void DI(CPU *cpu);
-void XOR(CPU *cpu, Cartridge *cart);
-void LD(CPU *cpu, Cartridge *cart);
-void DEC(CPU *cpu, Cartridge *cart);
+void JP();
+void DI();
+void XOR();
+void LD();
+void DEC();
+void JR();

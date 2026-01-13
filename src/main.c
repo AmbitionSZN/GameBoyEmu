@@ -3,15 +3,17 @@
 #include "cpu.h"
 #include <stdint.h>
 #include <stdio.h>
+    
+CPU cpu;
+Cartridge cart;
 
 int main() {
-    CPU cpu;
     cpu.Regs.PC = 0x100;
 	cpu.Regs.A = 0x01;
-    Cartridge cart = LoadCartridge("../roms/Tetris.gb");
+    cart = LoadCartridge("../roms/Tetris.gb");
     opcodesJsonParser("../Opcodes.json");
 	while (1) {
-    fetchInstruction(&cpu, &cart);
-	execute(&cpu, &cart);
+    fetchInstruction();
+	execute();
 	}
 }

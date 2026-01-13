@@ -44,10 +44,10 @@ typedef enum {
 } AddressingMode;
 
 typedef enum {
-	FLAG_Z = 7,
-	FLAG_N = 6,
-	FLAG_H = 5,
-	FLAG_C = 4,
+	FLAG_Z = 0b10000000,
+	FLAG_N = 0b01000000,
+	FLAG_H = 0b00100000,
+	FLAG_C = 0b00010000,
 } Flag;
 
 typedef enum {
@@ -208,13 +208,14 @@ typedef struct {
 } CPU;
 
 
-bool CheckFlag(CPU *cpu, Flag flag);
 
-void fetchInstruction(CPU *cpu, Cartridge *cart);
+bool CheckFlag(Flag flag);
 
-void execute(CPU *cpu, Cartridge *cart);
+void fetchInstruction();
 
-uint8_t* getRegisterU8(CPU *cpu, DataType reg); 
-uint16_t* getRegisterU16(CPU *cpu, DataType reg); 
-uint16_t readRegisterU16(CPU *cpu, DataType reg);
-void writeRegisterU16(CPU *cpu, DataType reg, uint16_t val);
+void execute();
+
+uint8_t* getRegisterU8(DataType reg); 
+uint16_t* getRegisterU16(DataType reg); 
+uint16_t readRegisterU16(DataType reg);
+void writeRegisterU16(DataType reg, uint16_t val);
