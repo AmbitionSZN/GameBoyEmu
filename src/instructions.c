@@ -45,7 +45,6 @@ void XOR(CPU *cpu, Cartridge *cart) {
     switch (cpu->CurInstr->Operand2) {
     case DT_N8:
         regs->A ^= cart->RomData[cpu->Regs.PC];
-        cpu->Regs.PC += 1;
         break;
     case DT_A:
     case DT_B:
@@ -63,50 +62,67 @@ void XOR(CPU *cpu, Cartridge *cart) {
         printf("error in XOR");
         exit(EXIT_FAILURE);
     }
+    regs->PC += cpu->CurInstr->Bytes - 1;
 }
 
 void LD(CPU *cpu, Cartridge *cart) {
     CPURegisters *regs = &cpu->Regs;
-	Instruction* instr = cpu->CurInstr;
+    Instruction *instr = cpu->CurInstr;
     uint8_t *op1 = NULL;
-	uint8_t op2 = 0;
+    uint8_t op2 = 0;
     uint16_t *op1U16 = NULL;
-    uint16_t *op2U16 = NULL;
+    uint16_t op2U16 = 0;
 
     switch (instr->Operand2) {
     case DT_A ... DT_L:
         op2 = *getRegisterU8(cpu, instr->Operand2);
         break;
     case DT_A_AF ... DT_A_HLD:
-        op2 = 
-        cart->RomData[reverseEndian(
-            getRegisterU16(cpu, instr->Operand1))];
+        op2 =
+            cart->RomData[reverseEndian(getRegisterU16(cpu, instr->Operand2))];
         break;
     case DT_N8:
         op2 = cart->RomData[regs->PC];
         break;
+    case DT_N16:
+        op2 = cart->RomData[regs->PC] | (cart->RomData[regs->PC + 1] << 8);
+		break;
+    case DT_AF ... DT_PC:
+        op2U16 = readRegisterU16(cpu, instr->Operand2);
+		break;
     default:
-        printf("error in LD");
+        printf("error in LD\n");
         exit(EXIT_FAILURE);
     }
 
     switch (instr->Operand1) {
     case DT_A ... DT_L:
         op1 = getRegisterU8(cpu, instr->Operand1);
+        *op1 = op2;
         break;
     case DT_A_AF ... DT_A_HLD:
-        op1 = &cart->RomData[reverseEndian(
-            getRegisterU16(cpu, instr->Operand1))];
+        op1 =
+            &cart->RomData[reverseEndian(getRegisterU16(cpu, instr->Operand1))];
+        *op1 = op2;
         break;
-		case DT_A16:
-			op1U16 = (uint16_t *)&cart->RomData[regs->PC];
+    case DT_A16: {
+        uint16_t addr = ((uint16_t)cart->RomData[regs->PC]) |
+                        ((uint16_t)cart->RomData[regs->PC + 1] >> 8);
+		op1 = &cart->RomData[addr];
+        if (instr->Operand2 == DT_SP) {
+			*((uint16_t*)op1) = regs->SP;
+            break;
+        }
+        *op1 = op2;
+        break;
+    }
     case DT_AF ... DT_HLD:
         op1U16 = getRegisterU16(cpu, instr->Operand1);
+		writeRegisterU16(cpu, instr->Operand1, op2U16);
         break;
     default:
-        printf("error in LD");
+        printf("error in LD\n");
         exit(EXIT_FAILURE);
     }
-
-	regs->PC += instr->Bytes - 1;
+    regs->PC += instr->Bytes - 1;
 }

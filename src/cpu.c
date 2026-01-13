@@ -338,6 +338,8 @@ uint16_t readRegisterU16(CPU *cpu, DataType reg) {
         return reverseEndian((uint16_t *)&regs->B);
     case DT_DE:
         return reverseEndian((uint16_t *)&regs->D);
+	case DT_HLI:
+	case DT_HLD:
     case DT_HL:
         return reverseEndian((uint16_t *)&regs->H);
     case DT_SP:
@@ -345,11 +347,10 @@ uint16_t readRegisterU16(CPU *cpu, DataType reg) {
     case DT_PC:
         return regs->PC;
     default:
-        printf("error in readRegisterU16");
+        printf("error in readRegisterU16\n");
+        printf("enum: %i", reg);
         exit(EXIT_FAILURE);
     }
-    printf("error in readRegisterU16");
-    exit(EXIT_FAILURE);
 }
 
 void writeRegisterU16(CPU *cpu, DataType reg, uint16_t val) {
@@ -357,20 +358,24 @@ void writeRegisterU16(CPU *cpu, DataType reg, uint16_t val) {
     switch (reg) {
     case DT_AF:
         *(uint16_t *)&regs->A = reverseEndian(&val);
+        break;
     case DT_BC:
         *(uint16_t *)&regs->B = reverseEndian(&val);
+        break;
     case DT_DE:
         *(uint16_t *)&regs->D = reverseEndian(&val);
+        break;
     case DT_HL:
         *(uint16_t *)&regs->H = reverseEndian(&val);
+        break;
     case DT_SP:
         regs->SP = val;
+        break;
     case DT_PC:
-    	regs->PC = val;
+        regs->PC = val;
+        break;
     default:
         printf("error in writeRegisterU16");
         exit(EXIT_FAILURE);
     }
-    printf("error in writeRegisterU16");
-    exit(EXIT_FAILURE);
 }
