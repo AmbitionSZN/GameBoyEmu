@@ -28,8 +28,8 @@ void JP() {
         exit(EXIT_FAILURE);
     }
     if (b) {
-        uint16_t lo = cart.RomData[cpu.Regs.PC];
-        uint16_t hi = cart.RomData[cpu.Regs.PC + 1];
+        uint16_t lo = cpu.InstrData[0];
+        uint16_t hi = cpu.InstrData[1];
         cpu.Regs.PC = lo | (hi << 8);
     }
 }
@@ -40,7 +40,7 @@ void XOR() {
     CPURegisters *regs = &cpu.Regs;
     switch (cpu.CurInstr->Operand2) {
     case DT_N8:
-        regs->A ^= cart.RomData[cpu.Regs.PC];
+        regs->A ^= cpu.InstrData[0];
         break;
     case DT_A:
     case DT_B:
@@ -58,7 +58,6 @@ void XOR() {
         printf("error in XOR");
         exit(EXIT_FAILURE);
     }
-    regs->PC += cpu.CurInstr->Bytes - 1;
 }
 
 void LD() {
@@ -77,10 +76,10 @@ void LD() {
         op2 = cart.RomData[reverseEndian(getRegisterU16(instr->Operand2))];
         break;
     case DT_N8:
-        op2 = cart.RomData[regs->PC];
+        op2 = cpu.InstrData[0];
         break;
     case DT_N16:
-        op2U16 = cart.RomData[regs->PC] | (cart.RomData[regs->PC + 1] << 8);
+        op2U16 = cpu.InstrData[0] | (cpu.InstrData[1] << 8);
         break;
     case DT_AF ... DT_HL:
     case DT_PC:
@@ -92,7 +91,7 @@ void LD() {
             break;
         }
         op2U16 = readRegisterU16(instr->Operand2) +
-                 *((int8_t *)&cart.RomData[regs->PC]);
+                 ((int8_t *)cpu.InstrData)[0];
         break;
     default:
         printf("error in LD\n");
@@ -109,14 +108,15 @@ void LD() {
         *op1 = op2;
         break;
     case DT_A16: {
-        uint16_t addr = ((uint16_t)cart.RomData[regs->PC]) |
-                        ((uint16_t)cart.RomData[regs->PC + 1] << 8);
+        uint16_t addr = ((uint16_t)cpu.InstrData[0]) |
+                        ((uint16_t)cpu.InstrData[1] << 8);
         op1 = &cart.RomData[addr];
         if (instr->Operand2 == DT_SP) {
-            *((uint16_t *)op1) = regs->SP;
+			op1[0] = regs->SP & 0xFF;
+			op1[1] = regs->SP >> 8;
             break;
         }
-        *op1 = op2;
+        op1[0] = op2;
         break;
     }
     case DT_AF ... DT_HLD:
@@ -134,7 +134,6 @@ void LD() {
                instr->Operand1 == DT_A_HLD || instr->Operand2 == DT_A_HLD) {
         writeRegisterU16(DT_HL, readRegisterU16(DT_HL) - 1);
     }
-    regs->PC += instr->Bytes - 1;
 }
 
 void DEC() {
@@ -179,7 +178,7 @@ void DEC() {
 
 void JR() {
     Instruction *instr = cpu.CurInstr;
-    int8_t data = *((int8_t *)&cart.RomData[cpu.Regs.PC]);
+    int8_t data = ((int8_t *)cpu.InstrData)[0];
     cpu.Regs.PC++;
     switch (instr->Operand1) {
     case DT_E8:

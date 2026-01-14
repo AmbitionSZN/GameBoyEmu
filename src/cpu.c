@@ -280,12 +280,21 @@ void fetchInstruction() {
         exit(EXIT_FAILURE);
     }
     cpu.CurInstr = &instructions[opcode];
-    cpu.Regs.PC++;
 
     printf("=====\nFetched instruction:\n");
     printf("\tOpcode: %2.2X\n", cpu.CurInstr->Opcode);
     printf("\tMnemonic: %s\n", cpu.CurInstr->Mnemonic);
     printf("\tPC: %X\n=====\n\n", cpu.Regs.PC);
+}
+
+void fetchData() {
+    cpu.Regs.PC++;
+    cpu.InstrData = NULL;
+    if (cpu.CurInstr->Bytes == 1) {
+        return;
+    }
+	cpu.InstrData = &cart.RomData[cpu.Regs.PC];
+	cpu.Regs.PC += cpu.CurInstr->Bytes - 1; 
 }
 
 void execute() {

@@ -198,12 +198,12 @@ typedef struct {
 	DataType Operand2;
     FlagInstruction Flags[4];
     bool Immediate;
-    AddressingMode AddrMode;
 } Instruction;
 
 typedef struct {
     CPURegisters Regs;
     Instruction* CurInstr;
+	uint8_t* InstrData;
 	bool IMEFlag;
 } CPU;
 
@@ -214,6 +214,7 @@ bool CheckFlag(Flag flag);
 bool CheckCondition(DataType condition);
 
 void fetchInstruction();
+void fetchData();
 void execute();
 
 uint8_t* getRegisterU8(DataType reg); 
