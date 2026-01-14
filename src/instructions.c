@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 extern CPU cpu;
 extern Cartridge cart;
@@ -17,17 +18,8 @@ void JP() {
     case DT_A16:
         b = true;
         break;
-    case DT_CC_Z:
-        b = CheckFlag(FLAG_Z);
-        break;
-    case DT_CC_C:
-        b = CheckFlag(FLAG_C);
-        break;
-    case DT_CC_NZ:
-        b = !CheckFlag(FLAG_Z);
-        break;
-    case DT_CC_NC:
-        b = !CheckFlag(FLAG_C);
+    case DT_CC_Z ... DT_CC_NC:
+        b = CheckCondition(cpu.CurInstr->Operand1);
         break;
     default:
         printf("error in JP\n");
@@ -60,7 +52,7 @@ void XOR() {
         regs->A ^= *getRegisterU8(cpu.CurInstr->Operand2);
         break;
     case DT_A_HL:
-        regs->A ^= cart.RomData[reverseEndian((uint16_t *)&regs->H)];
+        regs->A ^= cart.RomData[readRegisterU16(cpu.CurInstr->Operand2)];
         break;
     default:
         printf("error in XOR");
@@ -82,14 +74,13 @@ void LD() {
         op2 = *getRegisterU8(instr->Operand2);
         break;
     case DT_A_AF ... DT_A_HLD:
-        op2 =
-            cart.RomData[reverseEndian(getRegisterU16(instr->Operand2))];
+        op2 = cart.RomData[reverseEndian(getRegisterU16(instr->Operand2))];
         break;
     case DT_N8:
         op2 = cart.RomData[regs->PC];
         break;
     case DT_N16:
-        op2 = cart.RomData[regs->PC] | (cart.RomData[regs->PC + 1] << 8);
+        op2U16 = cart.RomData[regs->PC] | (cart.RomData[regs->PC + 1] << 8);
         break;
     case DT_AF ... DT_HL:
     case DT_PC:
@@ -114,8 +105,7 @@ void LD() {
         *op1 = op2;
         break;
     case DT_A_AF ... DT_A_HLD:
-        op1 =
-            &cart.RomData[reverseEndian(getRegisterU16(instr->Operand1))];
+        op1 = &cart.RomData[readRegisterU16(instr->Operand1)];
         *op1 = op2;
         break;
     case DT_A16: {
@@ -137,47 +127,71 @@ void LD() {
         printf("error in LD\n");
         exit(EXIT_FAILURE);
     }
-    if (instr->Operand1 == DT_HLI || instr->Operand2 == DT_HLI) {
-        regs->PC += 1;
-    } else if (instr->Operand1 == DT_HLD || instr->Operand2 == DT_HLD) {
-        regs->PC -= 1;
+    if (instr->Operand1 == DT_HLI || instr->Operand2 == DT_HLI ||
+        instr->Operand1 == DT_A_HLI || instr->Operand2 == DT_A_HLI) {
+        writeRegisterU16(DT_HL, readRegisterU16(DT_HL) + 1);
+    } else if (instr->Operand1 == DT_HLD || instr->Operand2 == DT_HLD ||
+               instr->Operand1 == DT_A_HLD || instr->Operand2 == DT_A_HLD) {
+        writeRegisterU16(DT_HL, readRegisterU16(DT_HL) - 1);
     }
     regs->PC += instr->Bytes - 1;
 }
 
 void DEC() {
     Instruction *instr = cpu.CurInstr;
-	CPURegisters* regs = &cpu.Regs;
+    CPURegisters *regs = &cpu.Regs;
     switch (instr->Operand1) {
     case DT_A ... DT_L: {
         uint8_t *reg = getRegisterU8(instr->Operand1);
-		if (((int)*reg & 0xF) - 1 < 0) {
-				regs->F |= FLAG_H;
-			}
-		*reg -= 1;
-		if (*reg == 0) {
-				regs->F |= FLAG_Z; 
-			}
-		regs->F |= FLAG_N;
+        if (((int)*reg & 0xF) - 1 < 0) {
+            regs->F |= FLAG_H;
+        }
+        *reg -= 1;
+        if (*reg == 0) {
+            regs->F |= FLAG_Z;
+        }
+        regs->F |= FLAG_N;
         break;
-		}
+    }
     case DT_BC ... DT_PC: {
         uint16_t *reg = getRegisterU16(instr->Operand1);
         writeRegisterU16(instr->Operand1, reverseEndian(reg) - 1);
         break;
+    }
     case DT_A_HL: {
         uint16_t addr = readRegisterU16(instr->Operand1);
+        if (((int)cart.RomData[addr] & 0xF) - 1 < 0) {
+            regs->F |= FLAG_H;
+        }
         cart.RomData[addr] -= 1;
+        if (cart.RomData[addr] == 0) {
+            regs->F |= FLAG_Z;
+        }
+        regs->F |= FLAG_N;
         break;
     }
+
     default:
         printf("error in DEC\n");
         exit(EXIT_FAILURE);
     }
-    }
 };
 
 void JR() {
-	//instr = cpu->CurInstr;
-	//switch ()	
+    Instruction *instr = cpu.CurInstr;
+    int8_t data = *((int8_t *)&cart.RomData[cpu.Regs.PC]);
+    cpu.Regs.PC++;
+    switch (instr->Operand1) {
+    case DT_E8:
+        cpu.Regs.PC += data;
+        break;
+    case DT_CC_Z ... DT_CC_NC:
+        if (CheckCondition(instr->Operand1)) {
+            cpu.Regs.PC += data;
+        }
+        break;
+    default:
+        printf("error in JR\n");
+        exit(EXIT_FAILURE);
+    }
 }

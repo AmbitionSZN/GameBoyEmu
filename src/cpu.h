@@ -211,8 +211,9 @@ typedef struct {
 
 bool CheckFlag(Flag flag);
 
-void fetchInstruction();
+bool CheckCondition(DataType condition);
 
+void fetchInstruction();
 void execute();
 
 uint8_t* getRegisterU8(DataType reg); 

@@ -64,11 +64,19 @@ DataType GetOperandType(cJSON *operand, char *mnemonic) {
     }
     if (strcmp(op, "HL") == 0) {
         bool immediate;
+        if (strcmp(operand->child->next->string, "decrement") == 0) {
+            immediate = cJSON_IsTrue(operand->child->next->next);
+            if (immediate) {
+                return DT_HLD;
+            }
+            return DT_A_HLD;
+        }
         if (strcmp(operand->child->next->string, "increment") == 0) {
-            if (cJSON_IsTrue(operand->child->next)) {
+            immediate = cJSON_IsTrue(operand->child->next->next);
+            if (immediate) {
                 return DT_HLI;
             }
-            return DT_HLD;
+            return DT_A_HLI;
         }
         immediate = cJSON_IsTrue(operand->child->next);
         if (immediate) {
@@ -247,7 +255,23 @@ uint16_t reverseEndian(const uint16_t *n) {
     return foo;
 }
 
-bool CheckFlag(Flag flag) { return (cpu.Regs.F & (1 << flag)) != 0; }
+bool CheckFlag(Flag flag) { return (cpu.Regs.F & flag) != 0; }
+
+bool CheckCondition(DataType condition) {
+    switch (condition) {
+    case DT_CC_Z:
+        return CheckFlag(FLAG_Z);
+    case DT_CC_C:
+        return CheckFlag(FLAG_C);
+    case DT_CC_NZ:
+        return !CheckFlag(FLAG_Z);
+    case DT_CC_NC:
+        return !CheckFlag(FLAG_C);
+    default:
+        printf("error in CheckCondition\n");
+        exit(EXIT_FAILURE);
+    }
+}
 
 void fetchInstruction() {
     uint16_t opcode = busRead(cpu.Regs.PC, &cart);
@@ -257,8 +281,8 @@ void fetchInstruction() {
     }
     cpu.CurInstr = &instructions[opcode];
     cpu.Regs.PC++;
-	
-	printf("=====\nFetched instruction:\n");
+
+    printf("=====\nFetched instruction:\n");
     printf("\tOpcode: %2.2X\n", cpu.CurInstr->Opcode);
     printf("\tMnemonic: %s\n", cpu.CurInstr->Mnemonic);
     printf("\tPC: %X\n=====\n\n", cpu.Regs.PC);
@@ -279,11 +303,11 @@ void execute() {
     } else if (strcmp(instr->Mnemonic, "LD") == 0) {
         LD();
 
-    }else if (strcmp(instr->Mnemonic, "DEC") == 0) {
-		DEC();
-	} else if (strcmp(instr->Mnemonic, "JR") == 0) {
-		JR();
-	}else {
+    } else if (strcmp(instr->Mnemonic, "DEC") == 0) {
+        DEC();
+    } else if (strcmp(instr->Mnemonic, "JR") == 0) {
+        JR();
+    } else {
 
         printf("Instruction not implemented:\n");
         printf("\tOpcode: %2.2X\n", cpu.CurInstr->Opcode);
@@ -292,7 +316,6 @@ void execute() {
         exit(EXIT_FAILURE);
     }
 }
-
 
 uint8_t *getRegisterU8(DataType reg) {
     CPURegisters *regs = &cpu.Regs;
@@ -314,7 +337,8 @@ uint8_t *getRegisterU8(DataType reg) {
     case DT_L:
         return &regs->L;
     default:
-        return NULL;
+        printf("error in getRegisterU8");
+        exit(EXIT_FAILURE);
     }
     return NULL;
 }
@@ -322,12 +346,20 @@ uint8_t *getRegisterU8(DataType reg) {
 uint16_t *getRegisterU16(DataType reg) {
     CPURegisters *regs = &cpu.Regs;
     switch (reg) {
+    case DT_A_AF:
     case DT_AF:
         return (uint16_t *)&regs->A;
+    case DT_A_BC:
     case DT_BC:
         return (uint16_t *)&regs->B;
+    case DT_A_DE:
     case DT_DE:
         return (uint16_t *)&regs->D;
+    case DT_A_HL:
+    case DT_A_HLI:
+    case DT_A_HLD:
+    case DT_HLI:
+    case DT_HLD:
     case DT_HL:
         return (uint16_t *)&regs->H;
     case DT_SP:
@@ -335,22 +367,30 @@ uint16_t *getRegisterU16(DataType reg) {
     case DT_PC:
         return &regs->PC;
     default:
-        return NULL;
+        printf("error in getRegisterU16");
+        exit(EXIT_FAILURE);
     }
-    return NULL;
+    printf("error in getRegisterU16");
+    exit(EXIT_FAILURE);
 }
 
 uint16_t readRegisterU16(DataType reg) {
     CPURegisters *regs = &cpu.Regs;
     switch (reg) {
+    case DT_A_AF:
     case DT_AF:
         return reverseEndian((uint16_t *)&regs->A);
+    case DT_A_BC:
     case DT_BC:
         return reverseEndian((uint16_t *)&regs->B);
+    case DT_A_DE:
     case DT_DE:
         return reverseEndian((uint16_t *)&regs->D);
-	case DT_HLI:
-	case DT_HLD:
+    case DT_A_HL:
+    case DT_A_HLI:
+    case DT_A_HLD:
+    case DT_HLI:
+    case DT_HLD:
     case DT_HL:
         return reverseEndian((uint16_t *)&regs->H);
     case DT_SP:
