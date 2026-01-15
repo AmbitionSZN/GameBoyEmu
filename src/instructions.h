@@ -14,6 +14,7 @@ void RET();
 void DI();
 void OR();
 void XOR();
+void AND();
 void LD();
 void LDH();
 void DEC();

@@ -317,7 +317,9 @@ void execute() {
 		OR();
 	} else if (strcmp(instr->Mnemonic, "XOR") == 0) {
         XOR();
-    } else if (strcmp(instr->Mnemonic, "DI") == 0) {
+    } else if (strcmp(instr->Mnemonic, "AND") == 0) {
+		AND();
+	}else if (strcmp(instr->Mnemonic, "DI") == 0) {
         DI();
     } else if (strcmp(instr->Mnemonic, "LD") == 0) {
         LD();
