@@ -12,6 +12,7 @@ void POP();
 void CALL();
 void RET();
 void DI();
+void OR();
 void XOR();
 void LD();
 void LDH();

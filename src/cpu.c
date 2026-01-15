@@ -313,6 +313,8 @@ void execute() {
 		CALL();
 	} else if (strcmp(instr->Mnemonic, "RET") == 0) {
 		RET();
+	} else if (strcmp(instr->Mnemonic, "OR") == 0) {
+		OR();
 	} else if (strcmp(instr->Mnemonic, "XOR") == 0) {
         XOR();
     } else if (strcmp(instr->Mnemonic, "DI") == 0) {

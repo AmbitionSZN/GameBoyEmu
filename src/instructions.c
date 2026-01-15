@@ -146,6 +146,36 @@ void RET() {
 
 void DI() { cpu.IMEFlag = false; }
 
+void OR() {
+    CPURegisters *regs = &cpu.Regs;
+    switch (cpu.CurInstr->Operand2) {
+    case DT_N8:
+        regs->A |= cpu.InstrData[0];
+        break;
+    case DT_A:
+    case DT_B:
+    case DT_C:
+    case DT_D:
+    case DT_E:
+    case DT_H:
+    case DT_L:
+        regs->A |= *getRegisterU8(cpu.CurInstr->Operand2);
+        break;
+    case DT_A_HL:
+        regs->A |= busRead(readRegisterU16(cpu.CurInstr->Operand2));
+        break;
+    default:
+        printf("error in XOR");
+        exit(EXIT_FAILURE);
+    }
+    if (regs->A == 0) {
+        regs->F |= FLAG_Z;
+    }
+    regs->F &= ~FLAG_N;
+    regs->F &= ~FLAG_H;
+    regs->F &= ~FLAG_C;
+}
+
 void XOR() {
     CPURegisters *regs = &cpu.Regs;
     switch (cpu.CurInstr->Operand2) {
@@ -168,6 +198,12 @@ void XOR() {
         printf("error in XOR");
         exit(EXIT_FAILURE);
     }
+    if (regs->A == 0) {
+        regs->F |= FLAG_Z;
+    }
+    regs->F &= ~FLAG_N;
+    regs->F &= ~FLAG_H;
+    regs->F &= ~FLAG_C;
 }
 
 void LD() {
