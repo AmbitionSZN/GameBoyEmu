@@ -218,6 +218,9 @@ void LD() {
     case DT_A ... DT_L:
         op2 = *getRegisterU8(instr->Operand2);
         break;
+    case DT_A16:
+        op2 = memory[cpu.InstrData[0] | (cpu.InstrData[1] << 8)];
+		break;
     case DT_A_AF ... DT_A_HLD:
         op2 = busRead(reverseEndian(getRegisterU16(instr->Operand2)));
         break;
@@ -409,5 +412,34 @@ void JR() {
     default:
         printf("error in JR\n");
         exit(EXIT_FAILURE);
+    }
+}
+
+void CP() {
+    CPURegisters *regs = &cpu.Regs;
+    uint8_t val;
+    switch (cpu.CurInstr->Operand2) {
+    case DT_N8:
+        val = cpu.InstrData[0];
+        break;
+    case DT_A ... DT_L:
+        val = *getRegisterU8(cpu.CurInstr->Operand2);
+        break;
+    case DT_A_HL:
+        val = busRead(readRegisterU16(cpu.CurInstr->Operand2));
+        break;
+    default:
+        printf("error in XOR");
+        exit(EXIT_FAILURE);
+    }
+    if (regs->A - val == 0) {
+        regs->F |= FLAG_Z;
+    }
+    regs->F |= FLAG_N;
+    if ((regs->A & 0xF) + (val & 0xF) > 0xF) {
+        regs->F |= FLAG_H;
+    }
+    if (val > regs->A) {
+        regs->F |= FLAG_C;
     }
 }

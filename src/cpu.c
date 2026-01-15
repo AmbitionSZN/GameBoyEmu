@@ -329,7 +329,9 @@ void execute() {
 		INC();
 	} else if (strcmp(instr->Mnemonic, "JR") == 0) {
         JR();
-    } else {
+    } else if (strcmp(instr->Mnemonic, "CP") == 0) {
+		CP();	
+	}else {
 
         printf("Instruction not implemented:\n");
         printf("\tOpcode: %2.2X\n", cpu.CurInstr->Opcode);

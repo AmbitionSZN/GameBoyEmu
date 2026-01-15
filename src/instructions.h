@@ -19,3 +19,4 @@ void LDH();
 void DEC();
 void INC();
 void JR();
+void CP();
