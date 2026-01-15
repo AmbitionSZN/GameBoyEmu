@@ -16,4 +16,5 @@ void XOR();
 void LD();
 void LDH();
 void DEC();
+void INC();
 void JR();

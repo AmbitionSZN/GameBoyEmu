@@ -125,7 +125,7 @@ void RET() {
         hi = memory[sp[0]];
         writeRegisterU16(DT_PC, (lo | (hi << 8)));
         sp[0]++;
-			break;
+        break;
     }
     case DT_CC_Z ... DT_CC_NC:
         if (CheckCondition(cpu.CurInstr->Operand1)) {
@@ -137,10 +137,10 @@ void RET() {
             writeRegisterU16(DT_PC, (lo | (hi << 8)));
             sp[0]++;
         }
-		break;
-		default:
-			printf("error in ret");
-			exit(EXIT_FAILURE);
+        break;
+    default:
+        printf("error in ret");
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -317,6 +317,46 @@ void DEC() {
         exit(EXIT_FAILURE);
     }
 };
+
+void INC() {
+    Instruction *instr = cpu.CurInstr;
+    CPURegisters *regs = &cpu.Regs;
+    switch (instr->Operand1) {
+    case DT_A ... DT_L: {
+        uint8_t *reg = getRegisterU8(instr->Operand1);
+        if ((*reg & 0xF) + 1 > 0xF) {
+            regs->F |= FLAG_H;
+        }
+        *reg += 1;
+        if (*reg == 0) {
+            regs->F |= FLAG_Z;
+        }
+        regs->F &= ~FLAG_N;
+        break;
+    }
+    case DT_BC ... DT_PC: {
+        uint16_t *reg = getRegisterU16(instr->Operand1);
+        writeRegisterU16(instr->Operand1, reverseEndian(reg) + 1);
+        break;
+    }
+    case DT_A_HL: {
+        uint16_t addr = readRegisterU16(instr->Operand1);
+        if ((memory[addr] & 0xF) + 1 > 0xF) {
+            regs->F |= FLAG_H;
+        }
+        memory[addr] += 1;
+        if (memory[addr] == 0) {
+            regs->F |= FLAG_Z;
+        }
+        regs->F &= ~FLAG_N;
+        break;
+    }
+
+    default:
+        printf("error in DEC\n");
+        exit(EXIT_FAILURE);
+    }
+}
 
 void JR() {
     Instruction *instr = cpu.CurInstr;

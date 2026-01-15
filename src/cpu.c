@@ -323,7 +323,9 @@ void execute() {
 		LDH();
 	} else if (strcmp(instr->Mnemonic, "DEC") == 0) {
         DEC();
-    } else if (strcmp(instr->Mnemonic, "JR") == 0) {
+    } else if (strcmp(instr->Mnemonic, "INC") == 0) {
+		INC();
+	} else if (strcmp(instr->Mnemonic, "JR") == 0) {
         JR();
     } else {
 
