@@ -138,6 +138,7 @@ typedef enum {
 	DT_RST28,
 	DT_RST30,
 	DT_RST38,
+	DT_A_C,
 	DT_A8,
 	DT_A16,
 	DT_A_AF,

@@ -35,6 +35,81 @@ void JP() {
     }
 }
 
+void PUSH() {
+    uint16_t *sp = &cpu.Regs.SP;
+    switch (cpu.CurInstr->Operand1) {
+    case DT_AF:
+        sp[0]--;
+        memory[sp[0]] = cpu.Regs.A;
+        sp[0]--;
+        memory[sp[0]] = cpu.Regs.F;
+        break;
+    case DT_BC ... DT_HL: {
+        uint16_t val = readRegisterU16(cpu.CurInstr->Operand1);
+        sp[0]--;
+        memory[sp[0]] = (val >> 8);
+        sp[0]--;
+        memory[sp[0]] = (val & 0xFF);
+        break;
+    }
+    default:
+        printf("error in push\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void POP() {
+    uint16_t *sp = &cpu.Regs.SP;
+    switch (cpu.CurInstr->Operand1) {
+    case DT_AF:
+        cpu.Regs.F = memory[sp[0]];
+        sp[0]++;
+        cpu.Regs.A = memory[sp[0]];
+        sp[0]++;
+        break;
+    case DT_BC ... DT_HL: {
+        uint16_t lo;
+        uint16_t hi;
+        lo = memory[sp[0]];
+        sp[0]++;
+        hi = memory[sp[0]];
+        writeRegisterU16(cpu.CurInstr->Operand1, (lo | (hi << 8)));
+        sp[0]++;
+        break;
+    }
+    default:
+        printf("error in push\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void CALL() {
+    uint16_t lo = cpu.InstrData[0];
+    uint16_t hi = cpu.InstrData[1];
+	uint16_t *sp = &cpu.Regs.SP;
+    switch (cpu.CurInstr->Operand1) {
+
+    case DT_A16: {
+        uint16_t pc = cpu.Regs.PC;
+        sp[0]--;
+        memory[sp[0]] = (pc >> 8);
+        sp[0]--;
+        memory[sp[0]] = (pc & 0xFF);
+        cpu.Regs.PC = (lo | (hi << 8));
+        break;
+		}
+    case DT_CC_Z ... DT_CC_NC:
+        if (CheckCondition(cpu.CurInstr->Operand1)) {
+            PUSH();
+            cpu.Regs.PC = (lo | (hi << 8));
+        }
+        break;
+    default:
+        printf("error in call\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
 void DI() { cpu.IMEFlag = false; }
 
 void XOR() {
@@ -91,8 +166,8 @@ void LD() {
             op2U16 = readRegisterU16(instr->Operand2);
             break;
         }
-        op2U16 = readRegisterU16(instr->Operand2) +
-                 ((int8_t *)cpu.InstrData)[0];
+        op2U16 =
+            readRegisterU16(instr->Operand2) + ((int8_t *)cpu.InstrData)[0];
         break;
     default:
         printf("error in LD\n");
@@ -109,12 +184,12 @@ void LD() {
         *op1 = op2;
         break;
     case DT_A16: {
-        uint16_t addr = ((uint16_t)cpu.InstrData[0]) |
-                        ((uint16_t)cpu.InstrData[1] << 8);
+        uint16_t addr =
+            ((uint16_t)cpu.InstrData[0]) | ((uint16_t)cpu.InstrData[1] << 8);
         op1 = &memory[addr];
         if (instr->Operand2 == DT_SP) {
-			op1[0] = regs->SP & 0xFF;
-			op1[1] = regs->SP >> 8;
+            op1[0] = regs->SP & 0xFF;
+            op1[1] = regs->SP >> 8;
             break;
         }
         op1[0] = op2;
@@ -134,6 +209,38 @@ void LD() {
     } else if (instr->Operand1 == DT_HLD || instr->Operand2 == DT_HLD ||
                instr->Operand1 == DT_A_HLD || instr->Operand2 == DT_A_HLD) {
         writeRegisterU16(DT_HL, readRegisterU16(DT_HL) - 1);
+    }
+}
+
+void LDH() {
+    uint8_t data;
+    switch (cpu.CurInstr->Operand2) {
+    case DT_A8:
+        data = memory[0xFF00 + data];
+        break;
+    case DT_A_C:
+        data = memory[0xFF00 + cpu.Regs.C];
+        break;
+    case DT_A:
+        data = memory[cpu.Regs.A];
+        break;
+    default:
+        printf("error in LDH");
+        exit(EXIT_FAILURE);
+    }
+    switch (cpu.CurInstr->Operand1) {
+    case DT_A8:
+        memory[0xFF00 + cpu.InstrData[0]] = data;
+        break;
+    case DT_A_C:
+        memory[0xFF00 + cpu.Regs.C] = data;
+        break;
+    case DT_A:
+        cpu.Regs.A = data;
+        break;
+    default:
+        printf("error in LDH");
+        exit(EXIT_FAILURE);
     }
 }
 

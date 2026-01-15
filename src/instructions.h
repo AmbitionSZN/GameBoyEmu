@@ -7,8 +7,12 @@
 
 
 void JP();
+void PUSH();
+void POP();
+void CALL();
 void DI();
 void XOR();
 void LD();
+void LDH();
 void DEC();
 void JR();

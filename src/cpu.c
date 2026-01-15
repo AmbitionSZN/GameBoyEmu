@@ -29,7 +29,9 @@ DataType GetOperandType(cJSON *operand, char *mnemonic) {
         if (strcmp(mnemonic, "CALL") == 0 || strcmp(mnemonic, "JP") == 0 ||
             strcmp(mnemonic, "JR") == 0 || strcmp(mnemonic, "RET") == 0) {
             return DT_CC_C;
-        }
+        } else if (!cJSON_IsTrue(operand->child->next)) {
+			return DT_A_C;
+		}
         return DT_C;
     }
     if (strcmp(op, "D") == 0) {
@@ -303,16 +305,21 @@ void execute() {
 
     } else if (strcmp(instr->Mnemonic, "JP") == 0) {
         JP();
-    } else if (strcmp(instr->Mnemonic, "XOR") == 0) {
+    } else if (strcmp(instr->Mnemonic, "PUSH") == 0) {
+		PUSH();
+	} else if (strcmp(instr->Mnemonic, "POP") == 0) {
+		POP();
+	} else if (strcmp(instr->Mnemonic, "CALL") == 0) {
+		CALL();
+	}else if (strcmp(instr->Mnemonic, "XOR") == 0) {
         XOR();
-
     } else if (strcmp(instr->Mnemonic, "DI") == 0) {
         DI();
-
     } else if (strcmp(instr->Mnemonic, "LD") == 0) {
         LD();
-
-    } else if (strcmp(instr->Mnemonic, "DEC") == 0) {
+    } else if (strcmp(instr->Mnemonic, "LDH") == 0) {
+		LDH();
+	} else if (strcmp(instr->Mnemonic, "DEC") == 0) {
         DEC();
     } else if (strcmp(instr->Mnemonic, "JR") == 0) {
         JR();
