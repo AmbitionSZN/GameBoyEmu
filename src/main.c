@@ -5,18 +5,14 @@
 #include <stdio.h>
 
 CPU cpu;
+uint8_t memory[0xFFFF];
 Cartridge cart;
 
 int main() {
     cpu.Regs.PC = 0x100;
     cpu.Regs.A = 0x01;
-    cart = LoadCartridge("../roms/Tetris.gb");
+    cart = LoadCartridge("../roms/cpu_instrs.gb");
     opcodesJsonParser("../Opcodes.json");
-	uint8_t num = 255;
-	
-    uint16_t max = ((uint16_t)num) | ((uint16_t)num << 8);
-	printf("max = %d", max);
-	return 1;
     while (1) {
         fetchInstruction();
         fetchData();

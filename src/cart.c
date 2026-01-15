@@ -1,6 +1,9 @@
 #include "cart.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+extern uint8_t memory[0xFFFF];
 
 Cartridge LoadCartridge(char *file) {
     Cartridge cart;
@@ -13,7 +16,7 @@ Cartridge LoadCartridge(char *file) {
     fseek(fptr, 0, SEEK_END);
     cart.RomSize = ftell(fptr);
     rewind(fptr);
-    cart.RomData = malloc(cart.RomSize);
+    cart.RomData = &memory[0];
     fread(cart.RomData, cart.RomSize, 1, fptr);
     fclose(fptr);
     cart.Header = (CartHeader *) (cart.RomData + 0x100);

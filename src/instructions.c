@@ -1,4 +1,5 @@
 #include "instructions.h"
+#include "bus.h"
 #include "cart.h"
 #include "cpu.h"
 #include <stdint.h>
@@ -7,7 +8,7 @@
 #include <unistd.h>
 
 extern CPU cpu;
-extern Cartridge cart;
+extern uint8_t memory[0xFFFF];
 
 void JP() {
     bool b;
@@ -52,7 +53,7 @@ void XOR() {
         regs->A ^= *getRegisterU8(cpu.CurInstr->Operand2);
         break;
     case DT_A_HL:
-        regs->A ^= cart.RomData[readRegisterU16(cpu.CurInstr->Operand2)];
+        regs->A ^= busRead(readRegisterU16(cpu.CurInstr->Operand2));
         break;
     default:
         printf("error in XOR");
@@ -73,7 +74,7 @@ void LD() {
         op2 = *getRegisterU8(instr->Operand2);
         break;
     case DT_A_AF ... DT_A_HLD:
-        op2 = cart.RomData[reverseEndian(getRegisterU16(instr->Operand2))];
+        op2 = busRead(reverseEndian(getRegisterU16(instr->Operand2)));
         break;
     case DT_N8:
         op2 = cpu.InstrData[0];
@@ -104,13 +105,13 @@ void LD() {
         *op1 = op2;
         break;
     case DT_A_AF ... DT_A_HLD:
-        op1 = &cart.RomData[readRegisterU16(instr->Operand1)];
+        op1 = &memory[readRegisterU16(instr->Operand1)];
         *op1 = op2;
         break;
     case DT_A16: {
         uint16_t addr = ((uint16_t)cpu.InstrData[0]) |
                         ((uint16_t)cpu.InstrData[1] << 8);
-        op1 = &cart.RomData[addr];
+        op1 = &memory[addr];
         if (instr->Operand2 == DT_SP) {
 			op1[0] = regs->SP & 0xFF;
 			op1[1] = regs->SP >> 8;
@@ -159,11 +160,11 @@ void DEC() {
     }
     case DT_A_HL: {
         uint16_t addr = readRegisterU16(instr->Operand1);
-        if (((int)cart.RomData[addr] & 0xF) - 1 < 0) {
+        if (((int)memory[addr] & 0xF) - 1 < 0) {
             regs->F |= FLAG_H;
         }
-        cart.RomData[addr] -= 1;
-        if (cart.RomData[addr] == 0) {
+        memory[addr] -= 1;
+        if (memory[addr] == 0) {
             regs->F |= FLAG_Z;
         }
         regs->F |= FLAG_N;
@@ -179,7 +180,6 @@ void DEC() {
 void JR() {
     Instruction *instr = cpu.CurInstr;
     int8_t data = ((int8_t *)cpu.InstrData)[0];
-    cpu.Regs.PC++;
     switch (instr->Operand1) {
     case DT_E8:
         cpu.Regs.PC += data;

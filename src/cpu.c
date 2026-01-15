@@ -10,7 +10,7 @@
 #include <unistd.h>
 
 extern CPU cpu;
-extern Cartridge cart;
+extern uint8_t memory[0xFFFF];
 
 Instruction instructions[512];
 
@@ -274,7 +274,7 @@ bool CheckCondition(DataType condition) {
 }
 
 void fetchInstruction() {
-    uint16_t opcode = busRead(cpu.Regs.PC, &cart);
+    uint16_t opcode = busRead(cpu.Regs.PC);
     if (opcode > 255) {
         printf("Instruction not implemented: %2.2X", opcode);
         exit(EXIT_FAILURE);
@@ -293,7 +293,7 @@ void fetchData() {
     if (cpu.CurInstr->Bytes == 1) {
         return;
     }
-	cpu.InstrData = &cart.RomData[cpu.Regs.PC];
+	cpu.InstrData = &memory[cpu.Regs.PC];
 	cpu.Regs.PC += cpu.CurInstr->Bytes - 1; 
 }
 

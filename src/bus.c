@@ -1,7 +1,14 @@
 #include "bus.h"
-#include "cart.h"
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-uint8_t busRead(uint16_t address, Cartridge *cart) {		
-	return cart->RomData[address];
+extern uint8_t memory[0xFFFF];
+
+uint8_t busRead(uint16_t address) {
+	return memory[address];
+}
+
+void BusWrite(uint16_t address, uint8_t val) {
+	memory[address] = val; 
 }
