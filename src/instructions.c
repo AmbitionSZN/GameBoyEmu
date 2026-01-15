@@ -86,7 +86,7 @@ void POP() {
 void CALL() {
     uint16_t lo = cpu.InstrData[0];
     uint16_t hi = cpu.InstrData[1];
-	uint16_t *sp = &cpu.Regs.SP;
+    uint16_t *sp = &cpu.Regs.SP;
     switch (cpu.CurInstr->Operand1) {
 
     case DT_A16: {
@@ -97,16 +97,50 @@ void CALL() {
         memory[sp[0]] = (pc & 0xFF);
         cpu.Regs.PC = (lo | (hi << 8));
         break;
-		}
+    }
     case DT_CC_Z ... DT_CC_NC:
         if (CheckCondition(cpu.CurInstr->Operand1)) {
-            PUSH();
+            uint16_t pc = cpu.Regs.PC;
+            sp[0]--;
+            memory[sp[0]] = (pc >> 8);
+            sp[0]--;
+            memory[sp[0]] = (pc & 0xFF);
             cpu.Regs.PC = (lo | (hi << 8));
         }
         break;
     default:
         printf("error in call\n");
         exit(EXIT_FAILURE);
+    }
+}
+
+void RET() {
+    uint16_t *sp = &cpu.Regs.SP;
+    switch (cpu.CurInstr->Operand1) {
+    case DT_NONE: {
+        uint16_t lo;
+        uint16_t hi;
+        lo = memory[sp[0]];
+        sp[0]++;
+        hi = memory[sp[0]];
+        writeRegisterU16(DT_PC, (lo | (hi << 8)));
+        sp[0]++;
+			break;
+    }
+    case DT_CC_Z ... DT_CC_NC:
+        if (CheckCondition(cpu.CurInstr->Operand1)) {
+            uint16_t lo;
+            uint16_t hi;
+            lo = memory[sp[0]];
+            sp[0]++;
+            hi = memory[sp[0]];
+            writeRegisterU16(DT_PC, (lo | (hi << 8)));
+            sp[0]++;
+        }
+		break;
+		default:
+			printf("error in ret");
+			exit(EXIT_FAILURE);
     }
 }
 

@@ -10,6 +10,7 @@ void JP();
 void PUSH();
 void POP();
 void CALL();
+void RET();
 void DI();
 void XOR();
 void LD();
