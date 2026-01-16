@@ -19,5 +19,6 @@ void LD();
 void LDH();
 void DEC();
 void INC();
+void ADD();
 void JR();
 void CP();

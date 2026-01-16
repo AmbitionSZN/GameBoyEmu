@@ -238,7 +238,7 @@ void LD() {
         break;
     case DT_A16:
         op2 = memory[cpu.InstrData[0] | (cpu.InstrData[1] << 8)];
-		break;
+        break;
     case DT_A_AF ... DT_A_HLD:
         op2 = busRead(reverseEndian(getRegisterU16(instr->Operand2)));
         break;
@@ -409,6 +409,82 @@ void INC() {
         break;
     }
 
+    default:
+        printf("error in DEC\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void ADD() {
+    Instruction *instr = cpu.CurInstr;
+    CPURegisters *regs = &cpu.Regs;
+    uint8_t val;
+    uint16_t val16;
+
+    switch (instr->Operand2) {
+    case DT_A ... DT_L:
+        val = *getRegisterU8(instr->Operand2);
+        break;
+    case DT_N8:
+        val = cpu.InstrData[0];
+        break;
+    case DT_A_HL:
+        val = memory[readRegisterU16(instr->Operand2)];
+    case DT_E8:
+        break;
+    case DT_N16:
+        val16 =
+            ((uint16_t)cpu.InstrData[0] | ((uint16_t)cpu.InstrData[1] >> 8));
+        break;
+    case DT_SP:
+        val16 = regs->SP;
+        break;
+    default:
+        printf("error in ADD\n");
+        exit(EXIT_FAILURE);
+    }
+
+    switch (instr->Operand1) {
+    case DT_A: {
+        uint8_t *reg = &regs->A;
+        if ((*reg & 0xF) + (val & 0xF) > 0xF) {
+            regs->F |= FLAG_H;
+        }
+        if (*reg + val > 0xFF) {
+            regs->F |= FLAG_C;
+        }
+        *reg += val;
+        if (*reg == 0) {
+            regs->F |= FLAG_Z;
+        }
+        regs->F &= ~FLAG_N;
+
+        break;
+    }
+    case DT_HL: {
+        uint16_t regVal = readRegisterU16(instr->Operand1);
+        writeRegisterU16(instr->Operand1, val);
+        if ((regVal & 0xFFF) + (val & 0xFFF) > 0xFFF) {
+            regs->F |= FLAG_H;
+        }
+        if (regVal + val > 0xFFFF) {
+            regs->F |= FLAG_C;
+        }
+        regs->F &= ~FLAG_N;
+        break;
+    }
+    case DT_SP: {
+        uint16_t regVal = readRegisterU16(instr->Operand1);
+        if ((regVal & 0xFFF) + (val & 0xFFF) > 0xFFF) {
+            regs->F |= FLAG_H;
+        }
+        if (regVal + val > 0xFFFF) {
+            regs->F |= FLAG_C;
+        }
+        regs->F &= ~FLAG_N;
+        regs->SP += ((int8_t *)cpu.InstrData)[0];
+        break;
+    }
     default:
         printf("error in DEC\n");
         exit(EXIT_FAILURE);
