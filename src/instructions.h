@@ -6,6 +6,7 @@
 
 
 
+
 void JP();
 void PUSH();
 void POP();
@@ -20,6 +21,7 @@ void LDH();
 void DEC();
 void INC();
 void ADD();
+void SUB();
 void JR();
 void CP();
-void SUB();
+void RRA();

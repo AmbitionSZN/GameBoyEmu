@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+#include "instructions.h"
 
 typedef struct {
     uint8_t A;
@@ -26,6 +27,70 @@ typedef enum {
 } Flag;
 
 typedef enum {
+    MNEM_NONE,
+    MNEM_NOP,
+    MNEM_LD,
+    MNEM_INC,
+    MNEM_DEC,
+    MNEM_RLCA,
+    MNEM_ADD,
+    MNEM_RRCA,
+    MNEM_STOP,
+    MNEM_RLA,
+    MNEM_JR,
+    MNEM_RRA,
+    MNEM_DAA,
+    MNEM_CPL,
+    MNEM_SCF,
+    MNEM_CCF,
+    MNEM_HALT,
+    MNEM_ADC,
+    MNEM_SUB,
+    MNEM_SBC,
+    MNEM_AND,
+    MNEM_XOR,
+    MNEM_OR,
+    MNEM_CP,
+    MNEM_POP,
+    MNEM_JP,
+    MNEM_PUSH,
+    MNEM_RET,
+    MNEM_CB,
+    MNEM_CALL,
+    MNEM_RETI,
+    MNEM_LDH,
+    MNEM_JPHL,
+    MNEM_DI,
+    MNEM_EI,
+    MNEM_RST,
+    MNEM_ERR,
+	MNEM_PREFIX,
+	MNEM_ILLEGAL_D3,
+	MNEM_ILLEGAL_DB,
+	MNEM_ILLEGAL_DD,
+	MNEM_ILLEGAL_E3,
+	MNEM_ILLEGAL_E4,
+	MNEM_ILLEGAL_EB,
+	MNEM_ILLEGAL_EC,
+	MNEM_ILLEGAL_ED,
+	MNEM_ILLEGAL_F4,
+	MNEM_ILLEGAL_FC,
+	MNEM_ILLEGAL_FD,
+    // CB instructions...
+    MNEM_RLC,
+    MNEM_RRC,
+    MNEM_RL,
+    MNEM_RR,
+    MNEM_SLA,
+    MNEM_SRA,
+    MNEM_SWAP,
+    MNEM_SRL,
+    MNEM_BIT,
+    MNEM_RES,
+    MNEM_SET,
+} Mnemonic;
+
+typedef enum {
     FLAGINSTR_NONE,
     FLAGINSTR_CLEAR,
     FLAGINSTR_SET,
@@ -35,57 +100,7 @@ typedef enum {
     FLAGINSTR_C,
 } FlagInstruction;
 
-typedef enum {
-    IN_NONE,
-    IN_NOP,
-    IN_LD,
-    IN_INC,
-    IN_DEC,
-    IN_RLCA,
-    IN_ADD,
-    IN_RRCA,
-    IN_STOP,
-    IN_RLA,
-    IN_JR,
-    IN_RRA,
-    IN_DAA,
-    IN_CPL,
-    IN_SCF,
-    IN_CCF,
-    IN_HALT,
-    IN_ADC,
-    IN_SUB,
-    IN_SBC,
-    IN_AND,
-    IN_XOR,
-    IN_OR,
-    IN_CP,
-    IN_POP,
-    IN_JP,
-    IN_PUSH,
-    IN_RET,
-    IN_CB,
-    IN_CALL,
-    IN_RETI,
-    IN_LDH,
-    IN_JPHL,
-    IN_DI,
-    IN_EI,
-    IN_RST,
-    IN_ERR,
-    // CB instructions...
-    IN_RLC,
-    IN_RRC,
-    IN_RL,
-    IN_RR,
-    IN_SLA,
-    IN_SRA,
-    IN_SWAP,
-    IN_SRL,
-    IN_BIT,
-    IN_RES,
-    IN_SET
-} Mnemonic;
+
 
 typedef enum {
     RT_NONE,
@@ -167,7 +182,8 @@ uint16_t reverseEndian(const uint16_t* n);
 
 typedef struct {
 	uint16_t Opcode;
-    char *Mnemonic;
+    char *StrMnemonic;
+	Mnemonic Mnem;
     uint8_t Bytes;
     uint8_t Cycles[2];
 	DataType Operand1;

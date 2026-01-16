@@ -569,3 +569,18 @@ void CP() {
         regs->F |= FLAG_C;
     }
 }
+
+void RRA() {
+    // FLAG_C = 0b00010000
+	
+    CPURegisters *regs = &cpu.Regs;
+	bool oldCarry = CheckFlag(FLAG_C);
+    regs->F = 0;
+    if ((regs->A & 1) != 0) {
+        regs->F = FLAG_C;
+    }
+    regs->A = regs->A >> 1;
+	if (oldCarry) {
+		regs->A |= 0b10000000;
+	}
+}
