@@ -331,7 +331,9 @@ void execute() {
 		INC();
 	} else if (strcmp(instr->Mnemonic, "ADD") == 0) {
 		ADD();
-	} else if (strcmp(instr->Mnemonic, "JR") == 0) {
+	} else if (strcmp(instr->Mnemonic, "SUB") == 0) {
+		SUB();
+	}else if (strcmp(instr->Mnemonic, "JR") == 0) {
         JR();
     } else if (strcmp(instr->Mnemonic, "CP") == 0) {
 		CP();	

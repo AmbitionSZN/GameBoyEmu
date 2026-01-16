@@ -22,3 +22,4 @@ void INC();
 void ADD();
 void JR();
 void CP();
+void SUB();

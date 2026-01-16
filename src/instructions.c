@@ -491,6 +491,38 @@ void ADD() {
     }
 }
 
+void SUB() {
+    Instruction *instr = cpu.CurInstr;
+    CPURegisters *regs = &cpu.Regs;
+    uint8_t val;
+    switch (instr->Operand2) {
+    case DT_A ... DT_L:
+        val = *getRegisterU8(instr->Operand2);
+        break;
+    case DT_N8:
+        val = cpu.InstrData[0];
+        break;
+    case DT_A_HL:
+        val = memory[readRegisterU16(instr->Operand2)];
+    default:
+        printf("error in ADD\n");
+        exit(EXIT_FAILURE);
+    }
+
+    uint8_t *reg = &regs->A;
+    if ((int)(*reg & 0xF) - (int)(val & 0xF) < 0) {
+        regs->F |= FLAG_H;
+    }
+    if (*reg < val) {
+        regs->F |= FLAG_C;
+    }
+    *reg -= val;
+    if (*reg == 0) {
+        regs->F |= FLAG_Z;
+    }
+    regs->F |= FLAG_N;
+}
+
 void JR() {
     Instruction *instr = cpu.CurInstr;
     int8_t data = ((int8_t *)cpu.InstrData)[0];
