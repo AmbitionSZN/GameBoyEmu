@@ -196,7 +196,9 @@ typedef struct {
     CPURegisters Regs;
     Instruction* CurInstr;
 	uint8_t* InstrData;
+	uint8_t IEReg;
 	bool IMEFlag;
+	bool EnableIME;
 } CPU;
 
 

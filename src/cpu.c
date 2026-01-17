@@ -185,59 +185,80 @@ Mnemonic getMnemonic(Instruction *instr) {
     } else if (strcmp(instr->StrMnemonic, "RRA") == 0) {
         return MNEM_RRA;
     } else if (strcmp(instr->StrMnemonic, "ADC") == 0) {
-		return MNEM_ADC;
-	} else if (strcmp(instr->StrMnemonic, "RLCA") == 0) {
-		return MNEM_RLCA;
-	} else if (strcmp(instr->StrMnemonic, "RRCA") == 0) {
-		return MNEM_RRCA;
-	} else if (strcmp(instr->StrMnemonic, "STOP") == 0) {
-		return MNEM_STOP;
-	} else if (strcmp(instr->StrMnemonic, "RLA") == 0) {
-		return MNEM_RLA;
-	} else if (strcmp(instr->StrMnemonic, "DAA") == 0) {
-		return MNEM_DAA;
-	} else if (strcmp(instr->StrMnemonic, "CPL") == 0) {
-		return MNEM_CPL;
-	} else if (strcmp(instr->StrMnemonic, "SCF") == 0) {
-		return MNEM_SCF;
-	} else if (strcmp(instr->StrMnemonic, "CCF") == 0) {
-		return MNEM_CCF;
-	} else if (strcmp(instr->StrMnemonic, "HALT") == 0) {
-		return MNEM_HALT;
-	} else if (strcmp(instr->StrMnemonic, "SBC") == 0) {
-		return MNEM_SBC;
-	} else if (strcmp(instr->StrMnemonic, "RST") == 0) {
-		return MNEM_RST;
-	} else if (strcmp(instr->StrMnemonic, "PREFIX") == 0) {
-		return MNEM_PREFIX;
-	} else if (strcmp(instr->StrMnemonic, "ILLEGAL_D3") == 0) {
-		return MNEM_ILLEGAL_D3;
-	} else if (strcmp(instr->StrMnemonic, "ILLEGAL_DB") == 0) {
-		return MNEM_ILLEGAL_DB;
-	} else if (strcmp(instr->StrMnemonic, "ILLEGAL_DD") == 0) {
-		return MNEM_ILLEGAL_DD;
-	} else if (strcmp(instr->StrMnemonic, "ILLEGAL_E3") == 0) {
-		return MNEM_ILLEGAL_E3;
-	} else if (strcmp(instr->StrMnemonic, "ILLEGAL_E4") == 0) {
-		return MNEM_ILLEGAL_E4;
-	} else if (strcmp(instr->StrMnemonic, "ILLEGAL_EB") == 0) {
-		return MNEM_ILLEGAL_EB;
-	} else if (strcmp(instr->StrMnemonic, "ILLEGAL_EC") == 0) {
-		return MNEM_ILLEGAL_EC;
-	} else if (strcmp(instr->StrMnemonic, "ILLEGAL_ED") == 0) {
-		return MNEM_ILLEGAL_ED;
-	} else if (strcmp(instr->StrMnemonic, "ILLEGAL_F4") == 0) {
-		return MNEM_ILLEGAL_F4;
-	} else if (strcmp(instr->StrMnemonic, "ILLEGAL_FC") == 0) {
-		return MNEM_ILLEGAL_FC;
-	} else if (strcmp(instr->StrMnemonic, "ILLEGAL_FD") == 0) {
-		return MNEM_ILLEGAL_FD;
-	} else if (strcmp(instr->StrMnemonic, "EI") == 0) {
-		return MNEM_EI;
-	}else if (strcmp(instr->StrMnemonic, "RETI") == 0) {
-		return MNEM_RETI;
-	}else {
-
+        return MNEM_ADC;
+    } else if (strcmp(instr->StrMnemonic, "RLCA") == 0) {
+        return MNEM_RLCA;
+    } else if (strcmp(instr->StrMnemonic, "RRCA") == 0) {
+        return MNEM_RRCA;
+    } else if (strcmp(instr->StrMnemonic, "STOP") == 0) {
+        return MNEM_STOP;
+    } else if (strcmp(instr->StrMnemonic, "RLA") == 0) {
+        return MNEM_RLA;
+    } else if (strcmp(instr->StrMnemonic, "DAA") == 0) {
+        return MNEM_DAA;
+    } else if (strcmp(instr->StrMnemonic, "CPL") == 0) {
+        return MNEM_CPL;
+    } else if (strcmp(instr->StrMnemonic, "SCF") == 0) {
+        return MNEM_SCF;
+    } else if (strcmp(instr->StrMnemonic, "CCF") == 0) {
+        return MNEM_CCF;
+    } else if (strcmp(instr->StrMnemonic, "HALT") == 0) {
+        return MNEM_HALT;
+    } else if (strcmp(instr->StrMnemonic, "SBC") == 0) {
+        return MNEM_SBC;
+    } else if (strcmp(instr->StrMnemonic, "RST") == 0) {
+        return MNEM_RST;
+    } else if (strcmp(instr->StrMnemonic, "PREFIX") == 0) {
+        return MNEM_PREFIX;
+    } else if (strcmp(instr->StrMnemonic, "ILLEGAL_D3") == 0) {
+        return MNEM_ILLEGAL_D3;
+    } else if (strcmp(instr->StrMnemonic, "ILLEGAL_DB") == 0) {
+        return MNEM_ILLEGAL_DB;
+    } else if (strcmp(instr->StrMnemonic, "ILLEGAL_DD") == 0) {
+        return MNEM_ILLEGAL_DD;
+    } else if (strcmp(instr->StrMnemonic, "ILLEGAL_E3") == 0) {
+        return MNEM_ILLEGAL_E3;
+    } else if (strcmp(instr->StrMnemonic, "ILLEGAL_E4") == 0) {
+        return MNEM_ILLEGAL_E4;
+    } else if (strcmp(instr->StrMnemonic, "ILLEGAL_EB") == 0) {
+        return MNEM_ILLEGAL_EB;
+    } else if (strcmp(instr->StrMnemonic, "ILLEGAL_EC") == 0) {
+        return MNEM_ILLEGAL_EC;
+    } else if (strcmp(instr->StrMnemonic, "ILLEGAL_ED") == 0) {
+        return MNEM_ILLEGAL_ED;
+    } else if (strcmp(instr->StrMnemonic, "ILLEGAL_F4") == 0) {
+        return MNEM_ILLEGAL_F4;
+    } else if (strcmp(instr->StrMnemonic, "ILLEGAL_FC") == 0) {
+        return MNEM_ILLEGAL_FC;
+    } else if (strcmp(instr->StrMnemonic, "ILLEGAL_FD") == 0) {
+        return MNEM_ILLEGAL_FD;
+    } else if (strcmp(instr->StrMnemonic, "EI") == 0) {
+        return MNEM_EI;
+    } else if (strcmp(instr->StrMnemonic, "RETI") == 0) {
+        return MNEM_RETI;
+    } else if (strcmp(instr->StrMnemonic, "RLC") == 0) {
+        return MNEM_RLC;
+    } else if (strcmp(instr->StrMnemonic, "RRC") == 0) {
+        return MNEM_RRC;
+    } else if (strcmp(instr->StrMnemonic, "RL") == 0) {
+        return MNEM_RL;
+    } else if (strcmp(instr->StrMnemonic, "RR") == 0) {
+        return MNEM_RR;
+    } else if (strcmp(instr->StrMnemonic, "SLA") == 0) {
+        return MNEM_SLA;
+    } else if (strcmp(instr->StrMnemonic, "SRA") == 0) {
+        return MNEM_SRA;
+    } else if (strcmp(instr->StrMnemonic, "SWAP") == 0) {
+        return MNEM_SWAP;
+    } else if (strcmp(instr->StrMnemonic, "SRL") == 0) {
+        return MNEM_SRL;
+    } else if (strcmp(instr->StrMnemonic, "BIT") == 0) {
+        return MNEM_BIT;
+    } else if (strcmp(instr->StrMnemonic, "RES") == 0) {
+        return MNEM_RES;
+    } else if (strcmp(instr->StrMnemonic, "SET") == 0) {
+        return MNEM_SET;
+    } else {
         printf("error in GetMnemonic:\n");
         printf("\tOpcode: %2.2X\n", instr->Opcode);
         printf("\tMnemonic: %s\n", instr->StrMnemonic);
@@ -262,14 +283,25 @@ void opcodesJsonParser(char *file) {
     fclose(fptr);
     cJSON *json = cJSON_Parse(str);
     cJSON *unprefixed = json->child;
+    cJSON *prefixed = json->child->next;
     cJSON *opcode = NULL;
-    for (size_t i = 0; i < cJSON_GetArraySize(unprefixed); i++) {
+    size_t instrSetSize =
+        cJSON_GetArraySize(unprefixed) + cJSON_GetArraySize(prefixed);
+    for (size_t i = 0; i < instrSetSize; i++) {
         Instruction instruction;
-        instruction.Opcode = i;
-        if (!opcode) {
+
+        if (i == 256) {
+            opcode = prefixed->child;
+            instruction.Opcode = i - 256;
+        } else if (i > 256) {
+            opcode = opcode->next;
+            instruction.Opcode = i - 256;
+        } else if (!opcode) {
             opcode = unprefixed->child;
+            instruction.Opcode = i;
         } else {
             opcode = opcode->next;
+            instruction.Opcode = i;
         }
 
         size_t mnemonicLen =
@@ -380,12 +412,12 @@ bool CheckCondition(DataType condition) {
 
 void fetchInstruction() {
     uint16_t opcode = busRead(cpu.Regs.PC);
-    if (opcode > 255) {
-        printf("Instruction not implemented: %2.2X", opcode);
-        exit(EXIT_FAILURE);
+    if (opcode == 0xCB) {
+        opcode = (busRead(cpu.Regs.PC + 1) + 256);
+        cpu.CurInstr = &instructions[opcode];
+    } else {
+        cpu.CurInstr = &instructions[opcode];
     }
-    cpu.CurInstr = &instructions[opcode];
-
     printf("=====\nFetched instruction:\n");
     printf("\tOpcode: %2.2X\n", cpu.CurInstr->Opcode);
     printf("\tMnemonic: %s\n", cpu.CurInstr->StrMnemonic);
@@ -405,70 +437,76 @@ void fetchData() {
 void execute() {
     Instruction *instr = cpu.CurInstr;
     switch (instr->Mnem) {
-	case MNEM_NOP:
-		break;
+    case MNEM_NOP:
+        break;
     case MNEM_JP:
         JP();
-		break;
+        break;
     case MNEM_PUSH:
         PUSH();
-		break;
+        break;
     case MNEM_POP:
         POP();
-		break;
+        break;
     case MNEM_CALL:
         CALL();
-		break;
+        break;
     case MNEM_RET:
         RET();
-		break;
+        break;
     case MNEM_OR:
         OR();
-		break;
+        break;
     case MNEM_XOR:
         XOR();
-		break;
+        break;
     case MNEM_AND:
         AND();
-		break;
+        break;
     case MNEM_DI:
         DI();
-		break;
+        break;
     case MNEM_LD:
         LD();
-		break;
+        break;
     case MNEM_LDH:
         LDH();
-		break;
+        break;
     case MNEM_DEC:
         DEC();
-		break;
+        break;
     case MNEM_INC:
         INC();
-		break;
+        break;
     case MNEM_SUB:
         SUB();
-		break;
+        break;
     case MNEM_ADD:
         ADD();
-		break;
+        break;
     case MNEM_JR:
         JR();
-		break;
+        break;
     case MNEM_CP:
         CP();
-		break;
+        break;
     case MNEM_RRA:
         RRA();
-		break;
-	default:
+        break;
+    case MNEM_ADC:
+        ADC();
+        break;
+    case MNEM_PREFIX:
+        PREFIX();
+
+        break;
+    default:
         printf("Instruction not implemented:\n");
         printf("\tOpcode: %2.2X\n", cpu.CurInstr->Opcode);
         printf("\tMnemonic: %s\n", cpu.CurInstr->StrMnemonic);
         printf("\tPC: %X\n", cpu.Regs.PC);
         exit(EXIT_FAILURE);
     }
-
 }
 
 uint8_t *getRegisterU8(DataType reg) {
@@ -491,7 +529,8 @@ uint8_t *getRegisterU8(DataType reg) {
     case DT_L:
         return &regs->L;
     default:
-        printf("error in getRegisterU8");
+        printf("error in getRegisterU8\n");
+        printf("%d\n", reg);
         exit(EXIT_FAILURE);
     }
     return NULL;

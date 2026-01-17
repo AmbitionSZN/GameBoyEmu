@@ -22,6 +22,8 @@ void DEC();
 void INC();
 void ADD();
 void SUB();
+void ADC();
 void JR();
 void CP();
 void RRA();
+void PREFIX();

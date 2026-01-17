@@ -523,6 +523,35 @@ void SUB() {
     regs->F |= FLAG_N;
 }
 
+void ADC() {
+    CPURegisters *regs = &cpu.Regs;
+    uint8_t val;
+    switch (cpu.CurInstr->Operand2) {
+    case DT_A ... DT_L:
+        val = *getRegisterU8(cpu.CurInstr->Operand2);
+        break;
+    case DT_N8:
+        val = cpu.InstrData[0];
+        break;
+    case DT_A_HL:
+        val = memory[readRegisterU16(DT_HL)];
+        break;
+    default:
+        printf("error in adc\n");
+        exit(EXIT_FAILURE);
+    }
+    if ((regs->A & 0xF) + (val & 0xF) > 0xF) {
+        regs->F |= FLAG_H;
+    }
+    if (regs->A + val > 0xFF) {
+        regs->F |= FLAG_C;
+    }
+    if (regs->A == 0) {
+        regs->F |= FLAG_Z;
+    }
+    regs->F &= ~FLAG_N;
+}
+
 void JR() {
     Instruction *instr = cpu.CurInstr;
     int8_t data = ((int8_t *)cpu.InstrData)[0];
@@ -572,15 +601,19 @@ void CP() {
 
 void RRA() {
     // FLAG_C = 0b00010000
-	
+
     CPURegisters *regs = &cpu.Regs;
-	bool oldCarry = CheckFlag(FLAG_C);
+    bool oldCarry = CheckFlag(FLAG_C);
     regs->F = 0;
     if ((regs->A & 1) != 0) {
         regs->F = FLAG_C;
     }
     regs->A = regs->A >> 1;
-	if (oldCarry) {
-		regs->A |= 0b10000000;
-	}
+    if (oldCarry) {
+        regs->A |= 0b10000000;
+    }
+}
+
+void PREFIX() {
+	 printf("CB opcode is: %2.2X\n", memory[cpu.Regs.PC]);
 }
