@@ -293,15 +293,19 @@ void opcodesJsonParser(char *file) {
         if (i == 256) {
             opcode = prefixed->child;
             instruction.Opcode = i - 256;
+			instruction.Prefixed = true;
         } else if (i > 256) {
             opcode = opcode->next;
             instruction.Opcode = i - 256;
+			instruction.Prefixed = true;
         } else if (!opcode) {
             opcode = unprefixed->child;
             instruction.Opcode = i;
+			instruction.Prefixed = false;
         } else {
             opcode = opcode->next;
             instruction.Opcode = i;
+			instruction.Prefixed = false;
         }
 
         size_t mnemonicLen =
@@ -413,21 +417,25 @@ bool CheckCondition(DataType condition) {
 void fetchInstruction() {
     uint16_t opcode = busRead(cpu.Regs.PC);
     if (opcode == 0xCB) {
-        opcode = (busRead(cpu.Regs.PC + 1) + 256);
+        cpu.Regs.PC++;
+        opcode = (busRead(cpu.Regs.PC) + 256);
         cpu.CurInstr = &instructions[opcode];
     } else {
         cpu.CurInstr = &instructions[opcode];
     }
+	
     printf("=====\nFetched instruction:\n");
     printf("\tOpcode: %2.2X\n", cpu.CurInstr->Opcode);
     printf("\tMnemonic: %s\n", cpu.CurInstr->StrMnemonic);
     printf("\tPC: %X\n=====\n\n", cpu.Regs.PC);
+	if (cpu.CurInstr->Opcode == 0x37) {
+	}
 }
 
 void fetchData() {
     cpu.Regs.PC++;
     cpu.InstrData = NULL;
-    if (cpu.CurInstr->Bytes == 1) {
+    if (cpu.CurInstr->Bytes == 1 || cpu.CurInstr->Prefixed) {
         return;
     }
     cpu.InstrData = &memory[cpu.Regs.PC];
@@ -496,10 +504,15 @@ void execute() {
     case MNEM_ADC:
         ADC();
         break;
-    case MNEM_PREFIX:
-        PREFIX();
-
+    case MNEM_SRL:
+        SRL();
         break;
+    case MNEM_CCF:
+        CCF();
+        break;
+	case MNEM_SWAP:
+		SWAP();
+		break;
     default:
         printf("Instruction not implemented:\n");
         printf("\tOpcode: %2.2X\n", cpu.CurInstr->Opcode);

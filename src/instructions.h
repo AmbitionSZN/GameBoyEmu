@@ -26,4 +26,6 @@ void ADC();
 void JR();
 void CP();
 void RRA();
-void PREFIX();
+void SRL();
+void CCF();
+void SWAP();

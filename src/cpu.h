@@ -190,6 +190,7 @@ typedef struct {
 	DataType Operand2;
     FlagInstruction Flags[4];
     bool Immediate;
+	bool Prefixed;
 } Instruction;
 
 typedef struct {
