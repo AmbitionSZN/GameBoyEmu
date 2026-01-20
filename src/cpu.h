@@ -204,8 +204,7 @@ typedef struct {
 
 
 
-bool CheckFlag(Flag flag);
-
+bool checkFlag(Flag flag);
 bool CheckCondition(DataType condition);
 
 void fetchInstruction();

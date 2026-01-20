@@ -396,18 +396,18 @@ uint16_t reverseEndian(const uint16_t *n) {
     return foo;
 }
 
-bool CheckFlag(Flag flag) { return (cpu.Regs.F & flag) != 0; }
+bool checkFlag(Flag flag) { return (cpu.Regs.F & flag) != 0; }
 
 bool CheckCondition(DataType condition) {
     switch (condition) {
     case DT_CC_Z:
-        return CheckFlag(FLAG_Z);
+        return checkFlag(FLAG_Z);
     case DT_CC_C:
-        return CheckFlag(FLAG_C);
+        return checkFlag(FLAG_C);
     case DT_CC_NZ:
-        return !CheckFlag(FLAG_Z);
+        return !checkFlag(FLAG_Z);
     case DT_CC_NC:
-        return !CheckFlag(FLAG_C);
+        return !checkFlag(FLAG_C);
     default:
         printf("error in CheckCondition\n");
         exit(EXIT_FAILURE);
@@ -424,17 +424,14 @@ void fetchInstruction() {
         cpu.CurInstr = &instructions[opcode];
     }
 	
-//	if (cpu.CurInstr->Mnem == MNEM_CALL) {
+	if (cpu.CurInstr->Mnem != MNEM_NOP) {
     printf("=====\nFetched instruction:\n");
     printf("\tOpcode: %2.2X\n", cpu.CurInstr->Opcode);
     printf("\tMnemonic: %s\n", cpu.CurInstr->StrMnemonic);
     printf("\tPC: %X\n=====\n\n", cpu.Regs.PC);
-//	}
+	}
 	
-    if (cpu.Regs.PC > 0xDFFF) {
-        printf("PC too high\n");
-        exit(0);
-    }
+
 }
 
 void fetchData() {
@@ -479,6 +476,9 @@ void execute() {
     case MNEM_DI:
         DI();
         break;
+	case MNEM_EI:
+		EI();
+		break;
     case MNEM_LD:
         LD();
         break;
@@ -503,6 +503,9 @@ void execute() {
     case MNEM_CP:
         CP();
         break;
+	case MNEM_CPL:
+		CPL();
+		break;
     case MNEM_RRA:
         RRA();
         break;
@@ -521,6 +524,9 @@ void execute() {
     case MNEM_SWAP:
         SWAP();
         break;
+	case MNEM_RST:
+		RST();
+		break;
     default:
         printf("Instruction not implemented:\n");
         printf("\tOpcode: %2.2X\n", cpu.CurInstr->Opcode);

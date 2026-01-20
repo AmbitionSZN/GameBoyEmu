@@ -11,11 +11,20 @@ Cartridge cart;
 int main() {
     cpu.Regs.PC = 0x100;
     cpu.Regs.A = 0x01;
-    cart = LoadCartridge("../roms/cpu_instrs.gb");
+    bool isNextInstr = false;
+    cart = LoadCartridge("../roms/Tetris.gb");
     opcodesJsonParser("../Opcodes.json");
     while (1) {
         fetchInstruction();
         fetchData();
         execute();
+        if (cpu.EnableIME) {
+            if (isNextInstr == true) {
+                cpu.IMEFlag = true;
+                isNextInstr = true;
+            } else {
+                isNextInstr = false;
+            }
+        }
     }
 }
