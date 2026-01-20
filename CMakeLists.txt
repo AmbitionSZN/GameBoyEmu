@@ -10,6 +10,7 @@ add_executable(${PROJECT_NAME}
 	src/bus.c
 	src/cpu.c
 	src/instructions.c
+	src/stack.c
 
 	src/cJSON.c
 )

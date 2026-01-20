@@ -293,19 +293,19 @@ void opcodesJsonParser(char *file) {
         if (i == 256) {
             opcode = prefixed->child;
             instruction.Opcode = i - 256;
-			instruction.Prefixed = true;
+            instruction.Prefixed = true;
         } else if (i > 256) {
             opcode = opcode->next;
             instruction.Opcode = i - 256;
-			instruction.Prefixed = true;
+            instruction.Prefixed = true;
         } else if (!opcode) {
             opcode = unprefixed->child;
             instruction.Opcode = i;
-			instruction.Prefixed = false;
+            instruction.Prefixed = false;
         } else {
             opcode = opcode->next;
             instruction.Opcode = i;
-			instruction.Prefixed = false;
+            instruction.Prefixed = false;
         }
 
         size_t mnemonicLen =
@@ -418,18 +418,23 @@ void fetchInstruction() {
     uint16_t opcode = busRead(cpu.Regs.PC);
     if (opcode == 0xCB) {
         cpu.Regs.PC++;
-        opcode = (busRead(cpu.Regs.PC) + 256);
+        opcode = (busRead(cpu.Regs.PC) + 0xFF);
         cpu.CurInstr = &instructions[opcode];
     } else {
         cpu.CurInstr = &instructions[opcode];
     }
 	
+//	if (cpu.CurInstr->Mnem == MNEM_CALL) {
     printf("=====\nFetched instruction:\n");
     printf("\tOpcode: %2.2X\n", cpu.CurInstr->Opcode);
     printf("\tMnemonic: %s\n", cpu.CurInstr->StrMnemonic);
     printf("\tPC: %X\n=====\n\n", cpu.Regs.PC);
-	if (cpu.CurInstr->Opcode == 0x37) {
-	}
+//	}
+	
+    if (cpu.Regs.PC > 0xDFFF) {
+        printf("PC too high\n");
+        exit(0);
+    }
 }
 
 void fetchData() {
@@ -501,6 +506,9 @@ void execute() {
     case MNEM_RRA:
         RRA();
         break;
+    case MNEM_RR:
+        RR();
+        break;
     case MNEM_ADC:
         ADC();
         break;
@@ -510,9 +518,9 @@ void execute() {
     case MNEM_CCF:
         CCF();
         break;
-	case MNEM_SWAP:
-		SWAP();
-		break;
+    case MNEM_SWAP:
+        SWAP();
+        break;
     default:
         printf("Instruction not implemented:\n");
         printf("\tOpcode: %2.2X\n", cpu.CurInstr->Opcode);
@@ -614,16 +622,16 @@ void writeRegisterU16(DataType reg, uint16_t val) {
     CPURegisters *regs = &cpu.Regs;
     switch (reg) {
     case DT_AF:
-        *(uint16_t *)&regs->A = reverseEndian(&val);
+        *((uint16_t *)&regs->A) = reverseEndian((uint16_t *)&val);
         break;
     case DT_BC:
-        *(uint16_t *)&regs->B = reverseEndian(&val);
+        *((uint16_t *)&regs->B) = reverseEndian((uint16_t *)&val);
         break;
     case DT_DE:
-        *(uint16_t *)&regs->D = reverseEndian(&val);
+        *((uint16_t *)&regs->D) = reverseEndian((uint16_t *)&val);
         break;
     case DT_HL:
-        *(uint16_t *)&regs->H = reverseEndian(&val);
+        *((uint16_t *)&regs->H) = reverseEndian((uint16_t *)&val);
         break;
     case DT_SP:
         regs->SP = val;

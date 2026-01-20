@@ -6,9 +6,10 @@
 extern uint8_t memory[0xFFFF];
 
 uint8_t busRead(uint16_t address) {
+
 	return memory[address];
 }
 
-void BusWrite(uint16_t address, uint8_t val) {
+void busWrite(uint16_t address, uint8_t val) {
 	memory[address] = val; 
 }

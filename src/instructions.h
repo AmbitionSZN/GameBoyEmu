@@ -29,3 +29,4 @@ void RRA();
 void SRL();
 void CCF();
 void SWAP();
+void RR();
