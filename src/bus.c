@@ -36,9 +36,7 @@ uint8_t busRead(uint16_t address) {
         return ioRead(address);
     } else if (address < 0xFFFF) {
         // hram
-        printf("UNSUPPORTED bus read(%04X)\n", address);
-		return 0x0;
-       // exit(EXIT_FAILURE);
+		return memory[address];
     } else if (address == 0xFFFF) {
         // CPU ENABLE REGISTER...
 		return memory[address];

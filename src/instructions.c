@@ -184,6 +184,8 @@ void AND() {
     regs->F &= ~FLAG_C;
 }
 
+
+
 void LD() {
     CPURegisters *regs = &cpu.Regs;
     Instruction *instr = cpu.CurInstr;
@@ -210,6 +212,8 @@ void LD() {
         op2U16 = (uint16_t)cpu.InstrData[0] | (uint16_t)(cpu.InstrData[1] << 8);
         break;
     case DT_AF ... DT_HL:
+        op2U16 = readRegisterU16(instr->Operand2);
+        break;
     case DT_PC:
         op2U16 = readRegisterU16(instr->Operand2);
         break;
@@ -220,10 +224,10 @@ void LD() {
         }
         uint16_t regVal = readRegisterU16(DT_SP);
         int8_t offset = ((int8_t *)cpu.InstrData)[0];
-        if ((regVal & 0xFFF) + (offset & 0xFFF) > 0xFFF) {
+        if ((regVal & 0xF) + (offset & 0xF) > 0xF) {
             regs->F |= FLAG_H;
         }
-        if (regVal + offset > 0xFFFF) {
+        if (regVal + offset > 0xFF) {
             regs->F |= FLAG_C;
         }
 
@@ -687,7 +691,7 @@ void SWAP() {
         if (op1 == 0) {
             regs->F |= FLAG_Z;
         }
-		*getRegisterU8(cpu.CurInstr->Operand1) = op1;
+        *getRegisterU8(cpu.CurInstr->Operand1) = op1;
         break;
     case DT_A_HL:
         op1 = busRead(readRegisterU16(cpu.CurInstr->Operand1));
@@ -696,7 +700,7 @@ void SWAP() {
         if (op1 == 0) {
             regs->F |= FLAG_Z;
         }
-		busWrite(readRegisterU16(cpu.CurInstr->Operand1), op1);
+        busWrite(readRegisterU16(cpu.CurInstr->Operand1), op1);
         break;
     default:
         printf("error in SWAP\n");

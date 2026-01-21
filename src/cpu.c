@@ -2,6 +2,7 @@
 #include "bus.h"
 #include "cJSON.h"
 #include "cart.h"
+#include "dbg.h"
 #include "instructions.h"
 #include "stack.h"
 #include <stdint.h>
@@ -569,6 +570,9 @@ void handleInterrupts() {
 
 void cpuStep() {
     if (!cpu.Halted) {
+		
+		dbgUpdate();
+		dbgPrint();
 
         fetchInstruction();
         fetchData();
@@ -642,6 +646,54 @@ uint16_t *getRegisterU16(DataType reg) {
     }
     printf("error in getRegisterU16");
     exit(EXIT_FAILURE);
+}
+
+uint16_t getOperandTwo() {
+    Instruction *instr = cpu.CurInstr;
+    CPURegisters *regs = &cpu.Regs;
+    switch (instr->Operand2) {
+    case DT_NONE:
+        printf("error in getOperandTwo");
+        exit(EXIT_FAILURE);
+    case DT_CC_Z ... DT_CC_NC:
+        printf("error in getOperandTwo");
+        exit(EXIT_FAILURE);
+    case DT_A ... DT_L:
+        return *getRegisterU8(instr->Operand2);
+    case DT_AF ... DT_HLD:
+        return readRegisterU16(instr->Operand2);
+    case DT_N8:
+        return cpu.InstrData[0];
+    case DT_N16:
+        return (cpu.InstrData[0] | cpu.InstrData[1] << 8);
+    case DT_E8:
+        return cpu.InstrData[0];
+    case DT_RST0:
+        return 0;
+    case DT_RST10:
+        return 0x10;
+    case DT_RST18:
+        return 0x18;
+    case DT_RST20:
+        return 0x20;
+    case DT_RST28:
+        return 0x28;
+    case DT_RST30:
+        return 0x30;
+    case DT_RST38:
+        return 0x38;
+    case DT_A_C:
+        return 0xFF00 + regs->C;
+    case DT_A8:
+        return 0xFF00 + cpu.InstrData[0];
+    case DT_A16:
+        return busRead(cpu.InstrData[0] | (cpu.InstrData[1] << 8));
+    case DT_A_AF ... DT_A_HLD:
+        return busRead(readRegisterU16(instr->Operand2));
+    default:
+        printf("error in getOperandTwo\n");
+        exit(EXIT_FAILURE);
+    }
 }
 
 uint16_t readRegisterU16(DataType reg) {

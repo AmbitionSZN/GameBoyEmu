@@ -56,7 +56,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     cpu.Regs.PC = 0x100;
     cpu.Regs.A = 0x01;
-    cart = LoadCartridge("../roms/06-ld r,r.gb");
+    cart = LoadCartridge("../roms/01-special.gb");
     opcodesJsonParser("../Opcodes.json");
 
     return SDL_APP_CONTINUE; /* carry on with the program! */

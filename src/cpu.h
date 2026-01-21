@@ -224,6 +224,7 @@ void cpuStep();
 
 uint8_t* getRegisterU8(DataType reg); 
 uint16_t* getRegisterU16(DataType reg); 
+uint16_t getOperandTwo();
 uint16_t readRegisterU16(DataType reg);
 void writeRegisterU16(DataType reg, uint16_t val);
 

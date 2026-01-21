@@ -12,6 +12,7 @@ add_executable(${PROJECT_NAME}
 	src/instructions.c
 	src/stack.c
 	src/io.c
+	src/dbg.c
 
 	src/cJSON.c
 )
