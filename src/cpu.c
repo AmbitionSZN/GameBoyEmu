@@ -424,12 +424,12 @@ void fetchInstruction() {
         cpu.CurInstr = &instructions[opcode];
     }
 	
-	if (cpu.CurInstr->Mnem != MNEM_NOP) {
+//	if (cpu.CurInstr->Mnem == MNEM_NOP) {
     printf("=====\nFetched instruction:\n");
     printf("\tOpcode: %2.2X\n", cpu.CurInstr->Opcode);
     printf("\tMnemonic: %s\n", cpu.CurInstr->StrMnemonic);
     printf("\tPC: %X\n=====\n\n", cpu.Regs.PC);
-	}
+//	}
 	
 
 }

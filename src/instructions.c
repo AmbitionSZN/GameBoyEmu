@@ -455,7 +455,7 @@ void ADD() {
         }
         regs->F &= ~FLAG_Z;
         regs->F &= ~FLAG_N;
-        regs->SP += ((int8_t *)cpu.InstrData)[0];
+        regs->SP += value;
         break;
     }
     default:
