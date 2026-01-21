@@ -1,15 +1,66 @@
 #include "bus.h"
 #include <stdint.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 extern uint8_t memory[0xFFFF];
 
 uint8_t busRead(uint16_t address) {
-
-	return memory[address];
+    if (address < 0x8000) {
+        // ROM Data
+        return memory[address];
+    } else if (address < 0xA000) {
+        // Char/Map Data
+        // TODO
+        printf("UNSUPPORTED bus read(%04X)\n", address);
+        exit(EXIT_FAILURE);
+    } else if (address < 0xC000) {
+        // Cartridge RAM
+    } else if (address < 0xE000) {
+        // WRAM (Working RAM)
+        return memory[address];
+    } else if (address < 0xFE00) {
+        // reserved echo ram...
+        return 0;
+    } else if (address < 0xFEA0) {
+        // OAM
+        // TODO
+        printf("UNSUPPORTED bus read(%04X)\n", address);
+        exit(EXIT_FAILURE);
+        return 0x0;
+    } else if (address < 0xFF00) {
+        // reserved unusable...
+        return 0;
+    } else if (address < 0xFF80) {
+        // IO Registers...
+        // TODO
+        printf("UNSUPPORTED bus read(%04X)\n", address);
+        // NO_IMPL
+        return 0x0;
+    } else if (address < 0xFFFF) {
+        // hram
+        printf("UNSUPPORTED bus read(%04X)\n", address);
+        exit(EXIT_FAILURE);
+    } else if (address == 0xFFFF) {
+        // CPU ENABLE REGISTER...
+        // TODO
+        printf("UNSUPPORTED bus read(%04X)\n", address);
+        exit(EXIT_FAILURE);
+    }
+    printf("error in busRead");
+    exit(EXIT_FAILURE);
 }
 
-void busWrite(uint16_t address, uint8_t val) {
-	memory[address] = val; 
+uint16_t busRead16(uint16_t address) {
+    uint16_t lo = busRead(address);
+    uint16_t hi = busRead(address);
+    return (lo | hi << 8);
+}
+
+void busWrite(uint16_t address, uint8_t val) { memory[address] = val; }
+
+void busWrite16(uint16_t address, uint16_t val) {
+    busWrite(address + 1, val >> 8);
+    busWrite(address, val & 0xFF);
 }

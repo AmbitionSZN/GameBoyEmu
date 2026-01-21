@@ -9,7 +9,6 @@
 #include <unistd.h>
 
 extern CPU cpu;
-extern uint8_t memory[0xFFFF];
 
 void JP() {
     bool b;
@@ -198,8 +197,8 @@ void LD() {
         op2 = *getRegisterU8(instr->Operand2);
         break;
     case DT_A16:
-        op2 = memory[(uint16_t)cpu.InstrData[0] |
-                     ((uint16_t)cpu.InstrData[1] << 8)];
+        op2 = busRead((uint16_t)cpu.InstrData[0] |
+                      ((uint16_t)cpu.InstrData[1] << 8));
         break;
     case DT_A_AF ... DT_A_HLD:
         op2 = busRead(readRegisterU16(instr->Operand2));
@@ -242,19 +241,18 @@ void LD() {
         *op1 = op2;
         break;
     case DT_A_AF ... DT_A_HLD:
-        op1 = &memory[readRegisterU16(instr->Operand1)];
-        *op1 = op2;
+        busWrite(readRegisterU16(instr->Operand1), op2);
         break;
     case DT_A16: {
         uint16_t addr =
             ((uint16_t)cpu.InstrData[0]) | ((uint16_t)cpu.InstrData[1] << 8);
-        op1 = &memory[addr];
         if (instr->Operand2 == DT_SP) {
-            op1[0] = regs->SP & 0xFF;
-            op1[1] = regs->SP >> 8;
+            uint16_t lo = regs->SP & 0xFF;
+            uint16_t hi = regs->SP >> 8;
+            busWrite16(addr, lo | (hi << 8));
             break;
         }
-        op1[0] = op2;
+        busWrite(addr, op2);
         break;
     }
     case DT_AF ... DT_HLD:
@@ -277,10 +275,10 @@ void LDH() {
     uint8_t data;
     switch (cpu.CurInstr->Operand2) {
     case DT_A8:
-        data = memory[0xFF00 + (uint16_t)data];
+        data = busRead(0xFF00 + (uint16_t)data);
         break;
     case DT_A_C:
-        data = memory[0xFF00 + (uint16_t)cpu.Regs.C];
+        data = busRead(0xFF00 + (uint16_t)cpu.Regs.C);
         break;
     case DT_A:
         data = cpu.Regs.A;
@@ -291,10 +289,10 @@ void LDH() {
     }
     switch (cpu.CurInstr->Operand1) {
     case DT_A8:
-        memory[(0xFF00 + (uint16_t)cpu.InstrData[0])] = data;
+        busWrite((0xFF00 + (uint16_t)cpu.InstrData[0]), data);
         break;
     case DT_A_C:
-        memory[(0xFF00 + (uint16_t)cpu.Regs.C)] = data;
+        busWrite((0xFF00 + (uint16_t)cpu.Regs.C), data);
         break;
     case DT_A:
         cpu.Regs.A = data;
@@ -327,11 +325,12 @@ void DEC() {
     }
     case DT_A_HL: {
         uint16_t addr = readRegisterU16(instr->Operand1);
-        if (((int)memory[addr] & 0xF) - 1 < 0) {
+        uint8_t op1 = busRead(addr);
+        if (((int)op1 & 0xF) - 1 < 0) {
             regs->F |= FLAG_H;
         }
-        memory[addr] -= 1;
-        if (memory[addr] == 0) {
+        busWrite(addr, op1 - 1);
+        if (op1 - 1 == 0) {
             regs->F |= FLAG_Z;
         }
         regs->F |= FLAG_N;
@@ -366,11 +365,12 @@ void INC() {
     }
     case DT_A_HL: {
         uint16_t addr = readRegisterU16(instr->Operand1);
-        if ((memory[addr] & 0xF) + 1 > 0xF) {
+        uint8_t op1 = busRead(addr);
+        if ((op1 & 0xF) + 1 > 0xF) {
             regs->F |= FLAG_H;
         }
-        memory[addr] += 1;
-        if (memory[addr] == 0) {
+        busWrite(addr, op1 + 1);
+        if (op1 + 1 == 0) {
             regs->F |= FLAG_Z;
         }
         regs->F &= ~FLAG_N;
@@ -396,15 +396,14 @@ void ADD() {
         op2 = cpu.InstrData[0];
         break;
     case DT_A_HL:
-        op2 = memory[readRegisterU16(instr->Operand2)];
+        op2 = busRead(readRegisterU16(instr->Operand2));
         break;
     case DT_AF ... DT_HL:
         op2 = readRegisterU16(DT_HL);
     case DT_E8:
         break;
     case DT_N16:
-        op2 =
-            ((uint16_t)cpu.InstrData[0] | ((uint16_t)cpu.InstrData[1] << 8));
+        op2 = ((uint16_t)cpu.InstrData[0] | ((uint16_t)cpu.InstrData[1] << 8));
         break;
     case DT_SP:
         op2 = regs->SP;
@@ -476,7 +475,7 @@ void SUB() {
         val = cpu.InstrData[0];
         break;
     case DT_A_HL:
-        val = memory[readRegisterU16(instr->Operand2)];
+        val = busRead(readRegisterU16(instr->Operand2));
         break;
     default:
         printf("error in SUB\n");
@@ -508,7 +507,7 @@ void ADC() {
         val = cpu.InstrData[0];
         break;
     case DT_A_HL:
-        val = memory[readRegisterU16(DT_HL)];
+        val = busRead(readRegisterU16(DT_HL));
         break;
     default:
         printf("error in adc\n");
@@ -597,55 +596,77 @@ void RRA() {
 
 void RR() {
     CPURegisters *regs = &cpu.Regs;
-    uint8_t *op1;
+    uint8_t op1;
+    bool oldCarry = checkFlag(FLAG_C);
     switch (cpu.CurInstr->Operand1) {
     case DT_A ... DT_L:
-        op1 = getRegisterU8(cpu.CurInstr->Operand1);
+        op1 = *getRegisterU8(cpu.CurInstr->Operand1);
+        regs->F = 0;
+        if ((op1 & 1) != 0) {
+            regs->F = FLAG_C;
+        }
+        op1 >>= 1;
+        if (oldCarry) {
+            op1 |= 0b10000000;
+        }
+        if (op1 == 0) {
+            regs->F |= FLAG_Z;
+        }
+        *getRegisterU8(cpu.CurInstr->Operand1) = op1;
         break;
     case DT_A_HL:
-        op1 = &memory[readRegisterU16(DT_HL)];
+        op1 = busRead(readRegisterU16(DT_HL));
+        regs->F = 0;
+        if ((op1 & 1) != 0) {
+            regs->F = FLAG_C;
+        }
+        op1 >>= 1;
+        if (oldCarry) {
+            op1 |= 0b10000000;
+        }
+        if (op1 == 0) {
+            regs->F |= FLAG_Z;
+        }
+        busWrite(readRegisterU16(DT_HL), op1);
         break;
     default:
         printf("error in RR\n");
         exit(EXIT_FAILURE);
-    }
-
-    bool oldCarry = checkFlag(FLAG_C);
-    regs->F = 0;
-    if ((*op1 & 1) != 0) {
-        regs->F = FLAG_C;
-    }
-    *op1 >>= 1;
-    if (oldCarry) {
-        *op1 |= 0b10000000;
-    }
-    if (*op1 == 0) {
-        regs->F |= FLAG_Z;
     }
 }
 
 void SRL() {
     CPURegisters *regs = &cpu.Regs;
     regs->F = 0;
-    uint8_t *op1;
+    uint8_t op1;
     switch (cpu.CurInstr->Operand1) {
     case DT_A ... DT_L:
-        op1 = getRegisterU8(cpu.CurInstr->Operand1);
+        op1 = *getRegisterU8(cpu.CurInstr->Operand1);
+        if ((op1 & 1) != 0) {
+            regs->F |= FLAG_C;
+        }
+        op1 >>= 1;
+        op1 &= ~(1 << 7);
+        if (op1 == 0) {
+            regs->F |= FLAG_Z;
+        }
+        *getRegisterU8(cpu.CurInstr->Operand1) = op1;
         break;
     case DT_A_HL:
-        op1 = &memory[readRegisterU16(DT_HL)];
+        op1 = busRead(readRegisterU16(DT_HL));
+        if ((op1 & 1) != 0) {
+            regs->F |= FLAG_C;
+        }
+        op1 >>= 1;
+        op1 &= ~(1 << 7);
+        if (op1 == 0) {
+            regs->F |= FLAG_Z;
+        }
+        busWrite(busRead(readRegisterU16(DT_HL)), op1);
         break;
     default:
         printf("error in SRL\n");
         exit(EXIT_FAILURE);
-    }
-    if ((*op1 & 1) != 0) {
-        regs->F |= FLAG_C;
-    }
-    *op1 >>= 1;
-    *op1 &= ~(1 << 7);
-    if (*op1 == 0) {
-        regs->F |= FLAG_Z;
     }
 }
 
@@ -657,22 +678,29 @@ void CCF() {
 
 void SWAP() {
     CPURegisters *regs = &cpu.Regs;
-    uint8_t *op1;
+    uint8_t op1;
     switch (cpu.CurInstr->Operand1) {
     case DT_A ... DT_L:
-        op1 = getRegisterU8(cpu.CurInstr->Operand1);
+        op1 = *getRegisterU8(cpu.CurInstr->Operand1);
+        op1 = (op1 >> 4) | (op1 << 4);
+        regs->F = 0;
+        if (op1 == 0) {
+            regs->F |= FLAG_Z;
+        }
+		*getRegisterU8(cpu.CurInstr->Operand1) = op1;
         break;
     case DT_A_HL:
-        op1 = &memory[readRegisterU16(cpu.CurInstr->Operand1)];
+        op1 = busRead(readRegisterU16(cpu.CurInstr->Operand1));
+        op1 = (op1 >> 4) | (op1 << 4);
+        regs->F = 0;
+        if (op1 == 0) {
+            regs->F |= FLAG_Z;
+        }
+		busWrite(readRegisterU16(cpu.CurInstr->Operand1), op1);
         break;
     default:
         printf("error in SWAP\n");
         exit(EXIT_FAILURE);
-    }
-    *op1 = (*op1 >> 4) | (*op1 << 4);
-    regs->F = 0;
-    if (*op1 == 0) {
-        regs->F |= FLAG_Z;
     }
 }
 
@@ -708,6 +736,6 @@ void RST() {
         printf("error in RST\n");
         exit(EXIT_FAILURE);
     }
-	stackPush16(regs->PC);
-	regs->PC = addr;
+    stackPush16(regs->PC);
+    regs->PC = addr;
 }
