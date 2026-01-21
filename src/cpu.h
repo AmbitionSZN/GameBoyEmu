@@ -175,6 +175,15 @@ typedef enum {
     RST_VEC38 = 0x38
 } RSTVec;
 
+typedef enum {
+	INT_VBLANK = 0,
+	INT_LCD = 1 << 1,
+	INT_TIMER = 1 << 2,
+	INT_SERIAL = 1 << 3,
+	INT_JOYPAD = 1 << 4,
+
+} Interrupt;
+
 void opcodesJsonParser(char *file);
 
 uint16_t reverseEndian(const uint16_t* n);
@@ -196,10 +205,11 @@ typedef struct {
 typedef struct {
     CPURegisters Regs;
     Instruction* CurInstr;
+	bool Halted;
 	uint8_t* InstrData;
-	uint8_t IEReg;
 	bool IMEFlag;
 	bool EnableIME;
+	bool EnablingIME;
 } CPU;
 
 
@@ -210,8 +220,11 @@ bool CheckCondition(DataType condition);
 void fetchInstruction();
 void fetchData();
 void execute();
+void cpuStep();
 
 uint8_t* getRegisterU8(DataType reg); 
 uint16_t* getRegisterU16(DataType reg); 
 uint16_t readRegisterU16(DataType reg);
 void writeRegisterU16(DataType reg, uint16_t val);
+
+void handleInterrupts();

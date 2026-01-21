@@ -11,6 +11,7 @@ add_executable(${PROJECT_NAME}
 	src/cpu.c
 	src/instructions.c
 	src/stack.c
+	src/io.c
 
 	src/cJSON.c
 )

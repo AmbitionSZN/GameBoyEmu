@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #define SDL_MAIN_USE_CALLBACKS 1 /* use the callbacks instead of main() */
 #include "bus.h"
 #include "cart.h"
@@ -10,7 +11,6 @@
 CPU cpu;
 uint8_t memory[0xFFFF];
 Cartridge cart;
-static bool isNextInstr = false;
 
 /*
 int main() {
@@ -56,7 +56,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     cpu.Regs.PC = 0x100;
     cpu.Regs.A = 0x01;
-    cart = LoadCartridge("../roms/Tetris.gb");
+    cart = LoadCartridge("../roms/06-ld r,r.gb");
     opcodesJsonParser("../Opcodes.json");
 
     return SDL_APP_CONTINUE; /* carry on with the program! */
@@ -83,17 +83,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     SDL_SetRenderDrawColorFloat(
         renderer, red, green, blue,
         SDL_ALPHA_OPAQUE_FLOAT); /* new color, full alpha. */
-    fetchInstruction();
-    fetchData();
-    execute();
-    if (cpu.EnableIME) {
-        if (isNextInstr == true) {
-            cpu.IMEFlag = true;
-            isNextInstr = true;
-        } else {
-            isNextInstr = false;
-        }
-    }
+	
+	cpuStep();
 
     /* clear the window to the draw color. */
     SDL_RenderClear(renderer);

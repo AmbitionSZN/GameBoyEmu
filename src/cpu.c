@@ -3,6 +3,7 @@
 #include "cJSON.h"
 #include "cart.h"
 #include "instructions.h"
+#include "stack.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -423,15 +424,13 @@ void fetchInstruction() {
     } else {
         cpu.CurInstr = &instructions[opcode];
     }
-	
-//	if (cpu.CurInstr->Mnem == MNEM_NOP) {
+
+    	if (cpu.CurInstr->Mnem != MNEM_NOP) {
     printf("=====\nFetched instruction:\n");
     printf("\tOpcode: %2.2X\n", cpu.CurInstr->Opcode);
     printf("\tMnemonic: %s\n", cpu.CurInstr->StrMnemonic);
     printf("\tPC: %X\n=====\n\n", cpu.Regs.PC);
-//	}
-	
-
+    	}
 }
 
 void fetchData() {
@@ -476,9 +475,9 @@ void execute() {
     case MNEM_DI:
         DI();
         break;
-	case MNEM_EI:
-		EI();
-		break;
+    case MNEM_EI:
+        EI();
+        break;
     case MNEM_LD:
         LD();
         break;
@@ -503,9 +502,9 @@ void execute() {
     case MNEM_CP:
         CP();
         break;
-	case MNEM_CPL:
-		CPL();
-		break;
+    case MNEM_CPL:
+        CPL();
+        break;
     case MNEM_RRA:
         RRA();
         break;
@@ -524,9 +523,9 @@ void execute() {
     case MNEM_SWAP:
         SWAP();
         break;
-	case MNEM_RST:
-		RST();
-		break;
+    case MNEM_RST:
+        RST();
+        break;
     default:
         printf("Instruction not implemented:\n");
         printf("\tOpcode: %2.2X\n", cpu.CurInstr->Opcode);
@@ -534,6 +533,57 @@ void execute() {
         printf("\tPC: %X\n", cpu.Regs.PC);
         exit(EXIT_FAILURE);
     }
+}
+
+void interruptHandle(uint16_t address) {
+    stackPush16(cpu.Regs.PC);
+    cpu.Regs.PC = address;
+}
+
+bool interruptCheck(uint16_t address, Interrupt it) {
+    static const uint16_t IF = 0xFF0F;
+    static const uint16_t IE = 0xFFFF;
+    if (busRead(IF) & it && busRead(IE) & it) {
+        interruptHandle(address);
+        busWrite16(IF, busRead16(IF) & ~it);
+        cpu.Halted = false;
+        cpu.IMEFlag = false;
+
+        return true;
+    }
+
+    return false;
+}
+
+void handleInterrupts() {
+    if (interruptCheck(0x40, INT_VBLANK)) {
+    } else if (interruptCheck(0x48, INT_LCD)) {
+
+    } else if (interruptCheck(0x50, INT_TIMER)) {
+
+    } else if (interruptCheck(0x58, INT_SERIAL)) {
+
+    } else if (interruptCheck(0x60, INT_JOYPAD)) {
+    }
+}
+
+void cpuStep() {
+    if (!cpu.Halted) {
+
+        fetchInstruction();
+        fetchData();
+        execute();
+        if (cpu.IMEFlag) {
+            handleInterrupts();
+            cpu.IMEFlag = false;
+        }
+
+        if (cpu.EnablingIME) {
+            cpu.IMEFlag = true;
+        }
+    } else {
+		
+	}
 }
 
 uint8_t *getRegisterU8(DataType reg) {
