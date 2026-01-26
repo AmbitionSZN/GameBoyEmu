@@ -197,6 +197,8 @@ typedef struct {
     uint8_t Cycles[2];
 	DataType Operand1;
 	DataType Operand2;
+	// will always be e8
+	bool Operand3;
     FlagInstruction Flags[4];
     bool Immediate;
 	bool Prefixed;
@@ -206,9 +208,8 @@ typedef struct {
     CPURegisters Regs;
     Instruction* CurInstr;
 	bool Halted;
-	uint8_t* InstrData;
+	uint8_t InstrData[2];
 	bool IMEFlag;
-	bool EnableIME;
 	bool EnablingIME;
 } CPU;
 
@@ -221,6 +222,7 @@ void fetchInstruction();
 void fetchData();
 void execute();
 void cpuStep();
+void cpuInit();
 
 uint8_t* getRegisterU8(DataType reg); 
 uint16_t* getRegisterU16(DataType reg); 
@@ -229,3 +231,5 @@ uint16_t readRegisterU16(DataType reg);
 void writeRegisterU16(DataType reg, uint16_t val);
 
 void handleInterrupts();
+
+void gbPrint();

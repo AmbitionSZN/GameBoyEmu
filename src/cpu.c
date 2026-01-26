@@ -9,14 +9,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 extern CPU cpu;
-extern uint8_t memory[0xFFFF];
+extern uint8_t memory[0x10000];
 
 Instruction instructions[512];
 
-DataType getOperandType(cJSON *operand, char *mnemonic) {
+DataType getOperandType(cJSON *operand, char *mnemonic, uint8_t opcode) {
     char *op = operand->child->valuestring;
     if (strcmp(op, "A") == 0) {
         return DT_A;
@@ -142,8 +143,9 @@ DataType getOperandType(cJSON *operand, char *mnemonic) {
     }
     if (strcmp(op, "a16") == 0) {
         return DT_A16;
+    } else {
+        return DT_NONE;
     }
-    return DT_NONE;
 }
 
 Mnemonic getMnemonic(Instruction *instr) {
@@ -291,6 +293,7 @@ void opcodesJsonParser(char *file) {
         cJSON_GetArraySize(unprefixed) + cJSON_GetArraySize(prefixed);
     for (size_t i = 0; i < instrSetSize; i++) {
         Instruction instruction;
+        instruction.Operand3 = false;
 
         if (i == 256) {
             opcode = prefixed->child;
@@ -331,17 +334,26 @@ void opcodesJsonParser(char *file) {
         if (operSize == 0) {
             instruction.Operand1 = DT_NONE;
             instruction.Operand2 = DT_NONE;
+            instruction.Operand3 = false;
         }
         if (operSize == 1) {
             cJSON *op1 = jsonOperands->child;
-            instruction.Operand1 = getOperandType(op1, instruction.StrMnemonic);
+            instruction.Operand1 =
+                getOperandType(op1, instruction.StrMnemonic, i);
             instruction.Operand2 = DT_NONE;
+            instruction.Operand3 = false;
         }
         if (operSize >= 2) {
             cJSON *op1 = jsonOperands->child;
             cJSON *op2 = jsonOperands->child->next;
-            instruction.Operand1 = getOperandType(op1, instruction.StrMnemonic);
-            instruction.Operand2 = getOperandType(op2, instruction.StrMnemonic);
+            instruction.Operand1 =
+                getOperandType(op1, instruction.StrMnemonic, i);
+            instruction.Operand2 =
+                getOperandType(op2, instruction.StrMnemonic, i);
+            instruction.Operand3 = false;
+        }
+        if (operSize == 3) {
+            instruction.Operand3 = true;
         }
         cJSON *jsonFlags = cJSON_GetObjectItem(opcode, "flags");
         cJSON *jsonFlag = NULL;
@@ -394,11 +406,11 @@ void opcodesJsonParser(char *file) {
 };
 
 uint16_t reverseEndian(const uint16_t *n) {
-    uint16_t foo = ((n[0]) >> 8) | ((n[0]) << 8);
+    uint16_t foo = ((n[0] >> 8) & 0xFF) | ((n[0] << 8));
     return foo;
 }
 
-bool checkFlag(Flag flag) { return (cpu.Regs.F & flag) != 0; }
+bool checkFlag(Flag flag) { return ((cpu.Regs.F & flag) != 0); }
 
 bool CheckCondition(DataType condition) {
     switch (condition) {
@@ -426,22 +438,30 @@ void fetchInstruction() {
         cpu.CurInstr = &instructions[opcode];
     }
 
-    	if (cpu.CurInstr->Mnem != MNEM_NOP) {
-    printf("=====\nFetched instruction:\n");
-    printf("\tOpcode: %2.2X\n", cpu.CurInstr->Opcode);
-    printf("\tMnemonic: %s\n", cpu.CurInstr->StrMnemonic);
-    printf("\tPC: %X\n=====\n\n", cpu.Regs.PC);
-    	}
+
+    gbPrint();
 }
 
 void fetchData() {
     cpu.Regs.PC++;
-    cpu.InstrData = NULL;
     if (cpu.CurInstr->Bytes == 1 || cpu.CurInstr->Prefixed) {
         return;
     }
-    cpu.InstrData = &memory[cpu.Regs.PC];
+    if (cpu.CurInstr->Bytes - 1 == 1) {
+        cpu.InstrData[0] = busRead(cpu.Regs.PC);
+    } else {
+        cpu.InstrData[0] = busRead(cpu.Regs.PC);
+        cpu.InstrData[1] = busRead(cpu.Regs.PC + 1);
+    }
     cpu.Regs.PC += cpu.CurInstr->Bytes - 1;
+}
+
+void gbPrint() {
+    printf("=====\nOpcode: %2.2X\nMnemonic: %s\n\nRegs:\nA: %X F: %X B: %X C: "
+           "%X D: %X E: %X H: %X L: %X SP: %X PC: %X\nFlags: Z: %i N: %i H: %i C: %i\n",
+           cpu.CurInstr->Opcode, cpu.CurInstr->StrMnemonic, cpu.Regs.A,
+           cpu.Regs.F, cpu.Regs.B, cpu.Regs.C, cpu.Regs.D, cpu.Regs.E,
+           cpu.Regs.H, cpu.Regs.L, cpu.Regs.SP, cpu.Regs.PC, cpu.Regs.F & FLAG_Z, cpu.Regs.F & FLAG_N, cpu.Regs.F & FLAG_H, cpu.Regs.F & FLAG_C);
 }
 
 void execute() {
@@ -568,15 +588,25 @@ void handleInterrupts() {
     }
 }
 
+void cpuInit() {
+    cpu.Regs.PC = 0x100;
+	cpu.Regs.A = 0x01;
+    cpu.Regs.SP = 0xFFFE;
+    cpu.Regs.F = 0;
+    memory[0xFF0F] = 0;
+    memory[0xFFFF] = 0;
+    cpu.IMEFlag = false;
+    cpu.EnablingIME = false;
+}
+
 void cpuStep() {
     if (!cpu.Halted) {
-		
-		dbgUpdate();
-		dbgPrint();
 
         fetchInstruction();
         fetchData();
         execute();
+        dbgUpdate();
+        dbgPrint();
         if (cpu.IMEFlag) {
             handleInterrupts();
             cpu.IMEFlag = false;
@@ -586,8 +616,9 @@ void cpuStep() {
             cpu.IMEFlag = true;
         }
     } else {
-		
-	}
+        printf("halted\n");
+        exit(0);
+    }
 }
 
 uint8_t *getRegisterU8(DataType reg) {
@@ -614,60 +645,23 @@ uint8_t *getRegisterU8(DataType reg) {
         printf("%d\n", reg);
         exit(EXIT_FAILURE);
     }
-    return NULL;
-}
-
-uint16_t *getRegisterU16(DataType reg) {
-    CPURegisters *regs = &cpu.Regs;
-    switch (reg) {
-    case DT_A_AF:
-    case DT_AF:
-        return (uint16_t *)&regs->A;
-    case DT_A_BC:
-    case DT_BC:
-        return (uint16_t *)&regs->B;
-    case DT_A_DE:
-    case DT_DE:
-        return (uint16_t *)&regs->D;
-    case DT_A_HL:
-    case DT_A_HLI:
-    case DT_A_HLD:
-    case DT_HLI:
-    case DT_HLD:
-    case DT_HL:
-        return (uint16_t *)&regs->H;
-    case DT_SP:
-        return &regs->SP;
-    case DT_PC:
-        return &regs->PC;
-    default:
-        printf("error in getRegisterU16");
-        exit(EXIT_FAILURE);
-    }
-    printf("error in getRegisterU16");
-    exit(EXIT_FAILURE);
 }
 
 uint16_t getOperandTwo() {
     Instruction *instr = cpu.CurInstr;
     CPURegisters *regs = &cpu.Regs;
     switch (instr->Operand2) {
-    case DT_NONE:
-        printf("error in getOperandTwo");
-        exit(EXIT_FAILURE);
-    case DT_CC_Z ... DT_CC_NC:
-        printf("error in getOperandTwo");
-        exit(EXIT_FAILURE);
     case DT_A ... DT_L:
         return *getRegisterU8(instr->Operand2);
     case DT_AF ... DT_HLD:
         return readRegisterU16(instr->Operand2);
     case DT_N8:
         return cpu.InstrData[0];
-    case DT_N16:
-        return (cpu.InstrData[0] | cpu.InstrData[1] << 8);
-    case DT_E8:
-        return cpu.InstrData[0];
+    case DT_N16: {
+        uint16_t lo = cpu.InstrData[0];
+        uint16_t hi = cpu.InstrData[1];
+        return (lo | (hi << 8));
+    }
     case DT_RST0:
         return 0;
     case DT_RST10:
@@ -686,8 +680,12 @@ uint16_t getOperandTwo() {
         return 0xFF00 + regs->C;
     case DT_A8:
         return 0xFF00 + cpu.InstrData[0];
-    case DT_A16:
-        return busRead(cpu.InstrData[0] | (cpu.InstrData[1] << 8));
+    case DT_A16: {
+        uint16_t lo = cpu.InstrData[0];
+        uint16_t hi = cpu.InstrData[1];
+
+        return busRead(lo | (hi << 8));
+    }
     case DT_A_AF ... DT_A_HLD:
         return busRead(readRegisterU16(instr->Operand2));
     default:

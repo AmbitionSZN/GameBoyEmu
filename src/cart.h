@@ -28,4 +28,6 @@ typedef struct {
 
 Cartridge LoadCartridge(char *file);
 
+uint8_t cartRead(uint16_t);
+
 

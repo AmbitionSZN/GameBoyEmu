@@ -1,3 +1,4 @@
+#include <SDL3/SDL_video.h>
 #include <stdlib.h>
 #define SDL_MAIN_USE_CALLBACKS 1 /* use the callbacks instead of main() */
 #include "bus.h"
@@ -8,8 +9,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
-CPU cpu;
-uint8_t memory[0xFFFF];
+CPU cpu = {0};
+uint8_t memory[0x10000] = {0};
 Cartridge cart;
 
 /*
@@ -46,7 +47,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     }
 
     if (!SDL_CreateWindowAndRenderer("examples/renderer/clear", 640, 480,
-                                     SDL_WINDOW_RESIZABLE, &window,
+                                     0, &window,
                                      &renderer)) {
         SDL_Log("Couldn't create window/renderer: %s", SDL_GetError());
         return SDL_APP_FAILURE;
@@ -54,8 +55,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     SDL_SetRenderLogicalPresentation(renderer, 640, 480,
                                      SDL_LOGICAL_PRESENTATION_LETTERBOX);
 
-    cpu.Regs.PC = 0x100;
-    cpu.Regs.A = 0x01;
+	cpuInit();
     cart = LoadCartridge("../roms/01-special.gb");
     opcodesJsonParser("../Opcodes.json");
 
@@ -85,6 +85,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         SDL_ALPHA_OPAQUE_FLOAT); /* new color, full alpha. */
 	
 	cpuStep();
+
 
     /* clear the window to the draw color. */
     SDL_RenderClear(renderer);

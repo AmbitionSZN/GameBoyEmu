@@ -1,8 +1,9 @@
 #include "io.h"
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-extern uint8_t memory[0xFFFF];
+extern uint8_t memory[0x10000];
 static char serialData[2];
 
 uint8_t ioRead(uint16_t address) {

@@ -3,7 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-extern uint8_t memory[0xFFFF];
+extern uint8_t memory[0x10000];
+extern Cartridge cart;
 
 Cartridge LoadCartridge(char *file) {
     Cartridge cart;
@@ -16,7 +17,7 @@ Cartridge LoadCartridge(char *file) {
     fseek(fptr, 0, SEEK_END);
     cart.RomSize = ftell(fptr);
     rewind(fptr);
-    cart.RomData = &memory[0];
+    cart.RomData = malloc(cart.RomSize);
     fread(cart.RomData, cart.RomSize, 1, fptr);
     fclose(fptr);
     cart.Header = (CartHeader *) (cart.RomData + 0x100);
@@ -30,4 +31,8 @@ Cartridge LoadCartridge(char *file) {
     printf("\t LIC Code : %X\n", cart.Header->OldLicCode);
     printf("\t ROM Vers : %2.2X\n", cart.Header->Version);
 	return cart;
+}
+
+uint8_t cartRead(uint16_t address) {
+	return cart.RomData[address];	
 }
