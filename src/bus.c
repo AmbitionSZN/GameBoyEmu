@@ -16,11 +16,10 @@ uint8_t busRead(uint16_t address) {
         // Char/Map Data
         // TODO
         printf("UNSUPPORTED bus read(%04X)\n", address);
-        exit(EXIT_FAILURE);
+		return 0;
     } else if (address < 0xC000) {
         // Cartridge RAM
-        printf("attempt to access cart ram");
-        exit(0);
+		return cartRead(address);
     } else if (address < 0xE000) {
         // WRAM (Working RAM)
         return memory[address];
@@ -59,7 +58,6 @@ uint16_t busRead16(uint16_t address) {
 void busWrite(uint16_t address, uint8_t val) {
     if (address < 0x8000) {
         // ROM Data
-        memory[address] = val;
 		printf("attempt to write to rom\n");
 		printf("address: %X\n", address);
         exit(0);
@@ -70,7 +68,7 @@ void busWrite(uint16_t address, uint8_t val) {
         //exit(EXIT_FAILURE);
     } else if (address < 0xC000) {
         // EXT-RAM
-        memory[address] = val;
+        cartWrite(address, val);
         return;
     } else if (address < 0xE000) {
         // WRAM

@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 extern CPU cpu;
@@ -36,10 +37,13 @@ void JP() {
 }
 
 void PUSH() {
+    CPURegisters *regs = &cpu.Regs;
     switch (cpu.CurInstr->Operand1) {
-    case DT_AF:
-        stackPush16(readRegisterU16(DT_AF));
+    case DT_AF: {
+        stackPush(regs->A);
+        stackPush(regs->F);
         break;
+    }
     case DT_BC ... DT_HL: {
         stackPush16(readRegisterU16(cpu.CurInstr->Operand1));
         break;
@@ -51,12 +55,13 @@ void PUSH() {
 }
 
 void POP() {
+    uint16_t n = stackPop16();
     switch (cpu.CurInstr->Operand1) {
     case DT_AF:
-        writeRegisterU16(DT_AF, stackPop16());
+        writeRegisterU16(DT_AF, n & 0xFFF0);
         break;
     case DT_BC ... DT_HL: {
-        writeRegisterU16(cpu.CurInstr->Operand1, stackPop16());
+        writeRegisterU16(cpu.CurInstr->Operand1, n);
         break;
     }
     default:
@@ -108,61 +113,33 @@ void EI() { cpu.EnablingIME = true; }
 
 void OR() {
     CPURegisters *regs = &cpu.Regs;
-    switch (cpu.CurInstr->Operand2) {
-    case DT_N8:
-        regs->A |= cpu.InstrData[0];
-        break;
-    case DT_A:
-    case DT_B:
-    case DT_C:
-    case DT_D:
-    case DT_E:
-    case DT_H:
-    case DT_L:
-        regs->A |= *getRegisterU8(cpu.CurInstr->Operand2);
-        break;
-    case DT_A_HL:
-        regs->A |= busRead(readRegisterU16(cpu.CurInstr->Operand2));
-        break;
-    default:
-        printf("error in XOR");
-        exit(EXIT_FAILURE);
-    }
+    uint8_t op2 = getOperandTwo();
+    regs->F = 0;
+    regs->A |= op2;
     if (regs->A == 0) {
         regs->F |= FLAG_Z;
-    } else {
-        regs->F &= ~FLAG_Z;
     }
-    regs->F &= ~FLAG_N;
-    regs->F &= ~FLAG_H;
-    regs->F &= ~FLAG_C;
 }
 
 void XOR() {
     CPURegisters *regs = &cpu.Regs;
     uint16_t op2 = getOperandTwo();
+    regs->F = 0;
     regs->A ^= op2;
     if (regs->A == 0) {
         regs->F |= FLAG_Z;
-    } else {
-        regs->F &= ~FLAG_Z;
     }
-    regs->F &= ~FLAG_N;
-    regs->F &= ~FLAG_H;
-    regs->F &= ~FLAG_C;
 }
 
 void AND() {
     CPURegisters *regs = &cpu.Regs;
-    uint16_t op2 = getOperandTwo();
+    uint8_t op2 = getOperandTwo();
+    regs->F = 0;
+    regs->A &= op2;
     if (regs->A == 0) {
         regs->F |= FLAG_Z;
-    } else {
-        regs->F &= ~FLAG_Z;
     }
-    regs->F &= ~FLAG_N;
     regs->F |= FLAG_H;
-    regs->F &= ~FLAG_C;
 }
 
 void LD() {
@@ -170,19 +147,14 @@ void LD() {
     Instruction *instr = cpu.CurInstr;
     uint16_t op2 = getOperandTwo();
     if (instr->Operand3) {
+		regs->F = 0;
         int8_t op3 = ((int8_t *)&cpu.InstrData)[0];
         if ((op2 & 0xF) + (op3 & 0xF) > 0xF) {
             regs->F |= FLAG_H;
-        } else {
-            regs->F &= ~FLAG_H;
         }
         if (op2 + op3 > 0xFF) {
             regs->F |= FLAG_C;
-        } else {
-            regs->F &= ~FLAG_C;
         }
-        regs->F &= ~FLAG_Z;
-        regs->F &= ~FLAG_N;
         writeRegisterU16(DT_HL, op2 + op3);
         return;
     }
@@ -190,7 +162,6 @@ void LD() {
     switch (instr->Operand1) {
     case DT_A ... DT_L:
         *getRegisterU8(instr->Operand1) = op2;
-
         break;
     case DT_A_AF ... DT_A_HLD:
 
@@ -348,21 +319,16 @@ void ADD() {
     switch (instr->Operand1) {
     case DT_A: {
         uint8_t *reg = &regs->A;
+        regs->F = 0;
         if ((*reg & 0xF) + (op2 & 0xF) > 0xF) {
             regs->F |= FLAG_H;
-        } else {
-            regs->F &= ~FLAG_H;
         }
         if (*reg + op2 > 0xFF) {
             regs->F |= FLAG_C;
-        } else {
-            regs->F &= ~FLAG_C;
         }
         *reg += op2;
         if (*reg == 0) {
             regs->F |= FLAG_Z;
-        } else {
-            regs->F &= ~FLAG_Z;
         }
         regs->F &= ~FLAG_N;
 
@@ -388,18 +354,13 @@ void ADD() {
     case DT_SP: {
         uint16_t regVal = readRegisterU16(instr->Operand1);
         int8_t value = ((int8_t *)cpu.InstrData)[0];
+        regs->F = 0;
         if ((regVal & 0xF) + (value & 0xF) > 0xF) {
             regs->F |= FLAG_H;
-        } else {
-            regs->F &= ~FLAG_H;
         }
-        if (regVal + value > 0xFF) {
+        if ((regVal & 0xFF) + (value & 0xFF) > 0xFF) {
             regs->F |= FLAG_C;
-        } else {
-            regs->F &= ~FLAG_C;
         }
-        regs->F &= ~FLAG_Z;
-        regs->F &= ~FLAG_N;
         regs->SP += value;
         break;
     }
@@ -413,23 +374,18 @@ void SUB() {
     Instruction *instr = cpu.CurInstr;
     CPURegisters *regs = &cpu.Regs;
     uint16_t op2 = getOperandTwo();
+    regs->F = 0;
 
     uint8_t *reg = &regs->A;
     if ((int)(*reg & 0xF) - (int)(op2 & 0xF) < 0) {
         regs->F |= FLAG_H;
-    } else {
-        regs->F &= ~FLAG_H;
     }
     if (*reg < op2) {
         regs->F |= FLAG_C;
-    } else {
-        regs->F &= ~FLAG_C;
     }
     *reg -= op2;
     if (*reg == 0) {
         regs->F |= FLAG_Z;
-    } else {
-        regs->F &= ~FLAG_Z;
     }
     regs->F |= FLAG_N;
 }
@@ -437,22 +393,17 @@ void SUB() {
 void ADC() {
     CPURegisters *regs = &cpu.Regs;
     uint16_t val = getOperandTwo() + checkFlag(FLAG_C);
+    regs->F = 0;
     if ((regs->A & 0xF) + (val & 0xF) > 0xF) {
         regs->F |= FLAG_H;
-    } else {
-        regs->F &= ~FLAG_H;
     }
     if (regs->A + val > 0xFF) {
         regs->F |= FLAG_C;
-    } else {
-        regs->F &= ~FLAG_C;
     }
+    regs->A += val;
     if (regs->A == 0) {
         regs->F |= FLAG_Z;
-    } else {
-        regs->F &= ~FLAG_Z;
     }
-    regs->F &= ~FLAG_N;
 }
 
 void JR() {
@@ -476,21 +427,15 @@ void JR() {
 void CP() {
     CPURegisters *regs = &cpu.Regs;
     uint16_t op2 = getOperandTwo();
+	regs->F = 0;
     if (regs->A - op2 == 0) {
         regs->F |= FLAG_Z;
-    } else {
-        regs->F &= ~FLAG_Z;
     }
-    regs->F |= FLAG_N;
     if ((int)(regs->A & 0xF) - (int)(op2 & 0xF) < 0) {
         regs->F |= FLAG_H;
-    } else {
-        regs->F &= ~FLAG_H;
     }
     if (op2 > regs->A) {
         regs->F |= FLAG_C;
-    } else {
-        regs->F &= ~FLAG_C;
     }
     regs->F |= FLAG_N;
 }
@@ -508,9 +453,7 @@ void RRA() {
     regs->F = 0;
     if ((regs->A & 1) != 0) {
         regs->F = FLAG_C;
-    } else {
-			regs->F &= ~FLAG_C;
-			}
+    }
     regs->A >>= 1;
     if (oldCarry) {
         regs->A |= 0b10000000;
@@ -521,10 +464,10 @@ void RR() {
     CPURegisters *regs = &cpu.Regs;
     uint8_t op1;
     bool oldCarry = checkFlag(FLAG_C);
+    regs->F = 0;
     switch (cpu.CurInstr->Operand1) {
     case DT_A ... DT_L:
         op1 = *getRegisterU8(cpu.CurInstr->Operand1);
-        regs->F = 0;
         if ((op1 & 1) != 0) {
             regs->F = FLAG_C;
         }
@@ -539,7 +482,6 @@ void RR() {
         break;
     case DT_A_HL:
         op1 = busRead(readRegisterU16(DT_HL));
-        regs->F = 0;
         if ((op1 & 1) != 0) {
             regs->F = FLAG_C;
         }
@@ -610,8 +552,8 @@ void SWAP() {
         if (op1 == 0) {
             regs->F |= FLAG_Z;
         } else {
-			regs->F &= ~FLAG_Z;
-			}
+            regs->F &= ~FLAG_Z;
+        }
         *getRegisterU8(cpu.CurInstr->Operand1) = op1;
         break;
     case DT_A_HL:
@@ -621,8 +563,8 @@ void SWAP() {
         if (op1 == 0) {
             regs->F |= FLAG_Z;
         } else {
-			regs->F &= ~FLAG_Z;
-			}
+            regs->F &= ~FLAG_Z;
+        }
         busWrite(readRegisterU16(cpu.CurInstr->Operand1), op1);
         break;
     default:
@@ -665,4 +607,32 @@ void RST() {
     }
     stackPush16(regs->PC);
     regs->PC = addr;
+}
+
+void DAA() {
+    CPURegisters *regs = &cpu.Regs;
+
+    if (!checkFlag(FLAG_N)) {
+        if (checkFlag(FLAG_C) || regs->A > 0x99) {
+            regs->A += 0x60;
+            regs->F |= FLAG_C;
+        }
+        if (checkFlag(FLAG_H) || ((regs->A & 0xF) > 0x9)) {
+            regs->A += 0x6;
+        }
+    } else {
+        if (checkFlag(FLAG_C)) {
+            regs->A -= 0x60;
+        }
+        if (checkFlag(FLAG_H)) {
+            regs->A -= 0x6;
+        }
+    }
+
+    if (regs->A == 0) {
+        regs->F |= FLAG_Z;
+    } else {
+        regs->F &= ~FLAG_Z;
+    }
+    regs->F &= ~FLAG_H;
 }

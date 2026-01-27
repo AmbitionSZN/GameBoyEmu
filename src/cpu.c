@@ -439,7 +439,7 @@ void fetchInstruction() {
     }
 
 
-    gbPrint();
+ //   gbPrint();
 }
 
 void fetchData() {
@@ -547,6 +547,9 @@ void execute() {
     case MNEM_RST:
         RST();
         break;
+	case MNEM_DAA:
+		DAA();
+		break;
     default:
         printf("Instruction not implemented:\n");
         printf("\tOpcode: %2.2X\n", cpu.CurInstr->Opcode);

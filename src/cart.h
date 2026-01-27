@@ -29,5 +29,6 @@ typedef struct {
 Cartridge LoadCartridge(char *file);
 
 uint8_t cartRead(uint16_t);
+void cartWrite(uint16_t address, uint8_t val);
 
 
