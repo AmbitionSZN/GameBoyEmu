@@ -176,7 +176,7 @@ typedef enum {
 } RSTVec;
 
 typedef enum {
-	INT_VBLANK = 0,
+	INT_VBLANK = 1,
 	INT_LCD = 1 << 1,
 	INT_TIMER = 1 << 2,
 	INT_SERIAL = 1 << 3,
@@ -231,5 +231,7 @@ uint16_t readRegisterU16(DataType reg);
 void writeRegisterU16(DataType reg, uint16_t val);
 
 void handleInterrupts();
+void requestInterrupt(Interrupt it);
 
 void gbPrint();
+void printInstrs(bool print);

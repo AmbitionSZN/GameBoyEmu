@@ -3,6 +3,7 @@
 #include "cJSON.h"
 #include "cart.h"
 #include "dbg.h"
+#include "emu.h"
 #include "instructions.h"
 #include "stack.h"
 #include <stdint.h>
@@ -291,6 +292,7 @@ void opcodesJsonParser(char *file) {
     cJSON *opcode = NULL;
     size_t instrSetSize =
         cJSON_GetArraySize(unprefixed) + cJSON_GetArraySize(prefixed);
+
     for (size_t i = 0; i < instrSetSize; i++) {
         Instruction instruction;
         instruction.Operand3 = false;
@@ -432,14 +434,15 @@ void fetchInstruction() {
     uint16_t opcode = busRead(cpu.Regs.PC);
     if (opcode == 0xCB) {
         cpu.Regs.PC++;
-        opcode = (busRead(cpu.Regs.PC) + 0xFF);
+        opcode = (busRead(cpu.Regs.PC) + 0x100);
         cpu.CurInstr = &instructions[opcode];
+        emuCycles(1);
     } else {
         cpu.CurInstr = &instructions[opcode];
+        emuCycles(1);
     }
 
-
- //   gbPrint();
+    //   gbPrint();
 }
 
 void fetchData() {
@@ -449,19 +452,58 @@ void fetchData() {
     }
     if (cpu.CurInstr->Bytes - 1 == 1) {
         cpu.InstrData[0] = busRead(cpu.Regs.PC);
+        emuCycles(1);
     } else {
         cpu.InstrData[0] = busRead(cpu.Regs.PC);
+        emuCycles(1);
         cpu.InstrData[1] = busRead(cpu.Regs.PC + 1);
+        emuCycles(1);
     }
     cpu.Regs.PC += cpu.CurInstr->Bytes - 1;
 }
 
 void gbPrint() {
     printf("=====\nOpcode: %2.2X\nMnemonic: %s\n\nRegs:\nA: %X F: %X B: %X C: "
-           "%X D: %X E: %X H: %X L: %X SP: %X PC: %X\nFlags: Z: %i N: %i H: %i C: %i\n",
+           "%X D: %X E: %X H: %X L: %X SP: %X PC: %X\nFlags: Z: %i N: %i H: %i "
+           "C: %i\n",
            cpu.CurInstr->Opcode, cpu.CurInstr->StrMnemonic, cpu.Regs.A,
            cpu.Regs.F, cpu.Regs.B, cpu.Regs.C, cpu.Regs.D, cpu.Regs.E,
-           cpu.Regs.H, cpu.Regs.L, cpu.Regs.SP, cpu.Regs.PC, cpu.Regs.F & FLAG_Z, cpu.Regs.F & FLAG_N, cpu.Regs.F & FLAG_H, cpu.Regs.F & FLAG_C);
+           cpu.Regs.H, cpu.Regs.L, cpu.Regs.SP, cpu.Regs.PC,
+           cpu.Regs.F & FLAG_Z, cpu.Regs.F & FLAG_N, cpu.Regs.F & FLAG_H,
+           cpu.Regs.F & FLAG_C);
+}
+
+void gbDoctorPrint(FILE *fptr) {
+    CPURegisters *regs = &cpu.Regs;
+    fprintf(fptr,
+            "A:%.2X F:%.2X B:%.2X C:%.2X D:%.2X E:%.2X H:%.2X L:%.2X "
+            "SP:%.4X PC:%.4X PCMEM:%.2X,%.2X,%.2X,%.2X\n",
+            regs->A, regs->F, regs->B, regs->C, regs->D, regs->E, regs->H,
+            regs->L, regs->SP, regs->PC, busRead(regs->PC),
+            busRead(regs->PC + 1), busRead(regs->PC + 2),
+            busRead(regs->PC + 3));
+}
+
+void printInstrs(bool print) {
+    static Instruction *instrs[512] = {NULL};
+    if (instrs[cpu.CurInstr->Opcode] == NULL) {
+        if (cpu.CurInstr->Prefixed) {
+            instrs[cpu.CurInstr->Opcode + 0x100] = cpu.CurInstr;
+        } else {
+            instrs[cpu.CurInstr->Opcode] = cpu.CurInstr;
+        }
+    }
+    if (print) {
+        for (size_t i = 0; i < 512; i++) {
+            Instruction *instr = instrs[i];
+            if (instr == NULL) {
+                continue;
+            }
+            printf("Opcode: %2.2X\n Mnemonic: %s, Operands: %i, %i\n=====\n",
+                   instr->Opcode, instr->StrMnemonic, instr->Operand1,
+                   instr->Operand2);
+        }
+    }
 }
 
 void execute() {
@@ -547,9 +589,9 @@ void execute() {
     case MNEM_RST:
         RST();
         break;
-	case MNEM_DAA:
-		DAA();
-		break;
+    case MNEM_DAA:
+        DAA();
+        break;
     default:
         printf("Instruction not implemented:\n");
         printf("\tOpcode: %2.2X\n", cpu.CurInstr->Opcode);
@@ -569,7 +611,7 @@ bool interruptCheck(uint16_t address, Interrupt it) {
     static const uint16_t IE = 0xFFFF;
     if (busRead(IF) & it && busRead(IE) & it) {
         interruptHandle(address);
-        busWrite16(IF, busRead16(IF) & ~it);
+        busWrite(IF, busRead(IF) & ~it);
         cpu.Halted = false;
         cpu.IMEFlag = false;
 
@@ -591,36 +633,45 @@ void handleInterrupts() {
     }
 }
 
+void requestInterrupt(Interrupt it) { busWrite(0xFF0F, busRead(0xFF0F) | it); }
+
 void cpuInit() {
     cpu.Regs.PC = 0x100;
-	cpu.Regs.A = 0x01;
     cpu.Regs.SP = 0xFFFE;
-    cpu.Regs.F = 0;
+    *((short *)&cpu.Regs.A) = 0xB001;
+    *((short *)&cpu.Regs.B) = 0x1300;
+    *((short *)&cpu.Regs.D) = 0xD800;
+    *((short *)&cpu.Regs.H) = 0x4D01;
+
     memory[0xFF0F] = 0;
     memory[0xFFFF] = 0;
     cpu.IMEFlag = false;
     cpu.EnablingIME = false;
 }
 
+extern FILE *logFile;
 void cpuStep() {
     if (!cpu.Halted) {
 
+        gbDoctorPrint(logFile);
         fetchInstruction();
+        printInstrs(false);
         fetchData();
         execute();
         dbgUpdate();
         dbgPrint();
-        if (cpu.IMEFlag) {
-            handleInterrupts();
-            cpu.IMEFlag = false;
-        }
 
-        if (cpu.EnablingIME) {
-            cpu.IMEFlag = true;
-        }
     } else {
         printf("halted\n");
         exit(0);
+    }
+    if (cpu.IMEFlag) {
+        handleInterrupts();
+        cpu.EnablingIME = false;
+    }
+
+    if (cpu.EnablingIME) {
+        cpu.IMEFlag = true;
     }
 }
 
@@ -680,9 +731,9 @@ uint16_t getOperandTwo() {
     case DT_RST38:
         return 0x38;
     case DT_A_C:
-        return 0xFF00 + regs->C;
+        return busRead(0xFF00 + regs->C);
     case DT_A8:
-        return 0xFF00 + cpu.InstrData[0];
+        return busRead(0xFF00 + cpu.InstrData[0]);
     case DT_A16: {
         uint16_t lo = cpu.InstrData[0];
         uint16_t hi = cpu.InstrData[1];

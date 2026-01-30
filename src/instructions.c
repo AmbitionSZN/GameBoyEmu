@@ -330,8 +330,6 @@ void ADD() {
         if (*reg == 0) {
             regs->F |= FLAG_Z;
         }
-        regs->F &= ~FLAG_N;
-
         break;
     }
     case DT_HL: {
@@ -469,7 +467,7 @@ void RR() {
     case DT_A ... DT_L:
         op1 = *getRegisterU8(cpu.CurInstr->Operand1);
         if ((op1 & 1) != 0) {
-            regs->F = FLAG_C;
+            regs->F |= FLAG_C;
         }
         op1 >>= 1;
         if (oldCarry) {
@@ -483,7 +481,7 @@ void RR() {
     case DT_A_HL:
         op1 = busRead(readRegisterU16(DT_HL));
         if ((op1 & 1) != 0) {
-            regs->F = FLAG_C;
+            regs->F |= FLAG_C;
         }
         op1 >>= 1;
         if (oldCarry) {
@@ -551,8 +549,6 @@ void SWAP() {
         regs->F = 0;
         if (op1 == 0) {
             regs->F |= FLAG_Z;
-        } else {
-            regs->F &= ~FLAG_Z;
         }
         *getRegisterU8(cpu.CurInstr->Operand1) = op1;
         break;
@@ -562,8 +558,6 @@ void SWAP() {
         regs->F = 0;
         if (op1 == 0) {
             regs->F |= FLAG_Z;
-        } else {
-            regs->F &= ~FLAG_Z;
         }
         busWrite(readRegisterU16(cpu.CurInstr->Operand1), op1);
         break;

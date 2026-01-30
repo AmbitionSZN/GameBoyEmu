@@ -1,3 +1,4 @@
+#include "emu.h"
 #include <SDL3/SDL_video.h>
 #include <stdlib.h>
 #define SDL_MAIN_USE_CALLBACKS 1 /* use the callbacks instead of main() */
@@ -9,9 +10,11 @@
 #include <stdint.h>
 #include <stdio.h>
 
+Emulator emu;
 CPU cpu = {0};
 uint8_t memory[0x10000] = {0};
 Cartridge cart;
+FILE *logFile;
 
 /*
 int main() {
@@ -46,16 +49,18 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         return SDL_APP_FAILURE;
     }
 
-    if (!SDL_CreateWindowAndRenderer("examples/renderer/clear", 640, 480,
-                                     0, &window,
-                                     &renderer)) {
+    if (!SDL_CreateWindowAndRenderer("examples/renderer/clear", 640, 480, 0,
+                                     &window, &renderer)) {
         SDL_Log("Couldn't create window/renderer: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
     SDL_SetRenderLogicalPresentation(renderer, 640, 480,
                                      SDL_LOGICAL_PRESENTATION_LETTERBOX);
 
-	cpuInit();
+    cpuInit();
+
+    logFile = fopen("../logs/log.txt", "w");
+
     cart = LoadCartridge("../roms/01-special.gb");
     opcodesJsonParser("../Opcodes.json");
 
@@ -83,9 +88,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     SDL_SetRenderDrawColorFloat(
         renderer, red, green, blue,
         SDL_ALPHA_OPAQUE_FLOAT); /* new color, full alpha. */
-	
-	cpuStep();
 
+    cpuStep();
 
     /* clear the window to the draw color. */
     SDL_RenderClear(renderer);
@@ -98,5 +102,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
 /* This function runs once at shutdown. */
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
+	fclose(logFile);
     /* SDL will clean up the window/renderer for us. */
 }
