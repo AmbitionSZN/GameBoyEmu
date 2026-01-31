@@ -14,6 +14,7 @@ void CALL();
 void RET();
 void DI();
 void EI();
+void HALT();
 void OR();
 void XOR();
 void AND();

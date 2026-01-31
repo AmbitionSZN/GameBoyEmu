@@ -110,6 +110,9 @@ void RET() {
 
 void DI() { cpu.IMEFlag = false; }
 void EI() { cpu.EnablingIME = true; }
+void HALT() {
+		cpu.Halted = true;	
+}
 
 void OR() {
     CPURegisters *regs = &cpu.Regs;

@@ -592,6 +592,9 @@ void execute() {
     case MNEM_DAA:
         DAA();
         break;
+	case MNEM_HALT:
+		HALT();
+		break;
     default:
         printf("Instruction not implemented:\n");
         printf("\tOpcode: %2.2X\n", cpu.CurInstr->Opcode);
@@ -662,9 +665,11 @@ void cpuStep() {
         dbgPrint();
 
     } else {
-        printf("halted\n");
-        exit(0);
-    }
+		emuCycles(1);
+		if (busRead(0xFF0F) & busRead(0xFFFF)) {
+			cpu.Halted = false;
+		}
+	}
     if (cpu.IMEFlag) {
         handleInterrupts();
         cpu.EnablingIME = false;

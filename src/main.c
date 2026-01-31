@@ -16,25 +16,6 @@ uint8_t memory[0x10000] = {0};
 Cartridge cart;
 FILE *logFile;
 
-/*
-int main() {
-
-    while (1) {
-        fetchInstruction();
-        fetchData();
-        execute();
-        if (cpu.EnableIME) {
-            if (isNextInstr == true) {
-                cpu.IMEFlag = true;
-                isNextInstr = true;
-            } else {
-                isNextInstr = false;
-            }
-        }
-    }
-}
-*/
-
 /* We will use this renderer to draw into this window every frame. */
 static SDL_Window *window = NULL;
 static SDL_Renderer *renderer = NULL;
@@ -61,7 +42,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     logFile = fopen("../logs/log.txt", "w");
 
-    cart = LoadCartridge("../roms/01-special.gb");
+    cart = LoadCartridge("../roms/02-interrupts.gb");
     opcodesJsonParser("../Opcodes.json");
 
     return SDL_APP_CONTINUE; /* carry on with the program! */
