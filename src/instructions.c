@@ -109,6 +109,11 @@ void RET() {
     }
 }
 
+void RETI() {
+	EI();
+	writeRegisterU16(DT_PC, stackPop16());
+}
+
 void DI() { cpu.IMEFlag = false; }
 void EI() { cpu.EnablingIME = true; }
 void HALT() { cpu.Halted = true; }

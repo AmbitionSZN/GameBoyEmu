@@ -12,6 +12,7 @@ void PUSH();
 void POP();
 void CALL();
 void RET();
+void RETI();
 void DI();
 void EI();
 void HALT();

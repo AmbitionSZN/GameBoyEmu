@@ -526,6 +526,9 @@ void execute() {
     case MNEM_RET:
         RET();
         break;
+	case MNEM_RETI:
+		RETI();
+		break;
     case MNEM_OR:
         OR();
         break;
