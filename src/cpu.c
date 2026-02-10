@@ -666,17 +666,10 @@ void cpuStep() {
 
     } else {
 		emuCycles(1);
-<<<<<<< HEAD
-		if (busRead(0xFF0F) & busRead(0xFFFF)) {
-			cpu.Halted = false;
-		}
-    }
-=======
 		if (busRead(0xFF0F) & busRead(0xFFFF)) {
 			cpu.Halted = false;
 		}
 	}
->>>>>>> refs/remotes/origin/main
     if (cpu.IMEFlag) {
         handleInterrupts();
         cpu.EnablingIME = false;
@@ -773,7 +766,7 @@ uint16_t getOperand(DataType op) {
     case DT_A_AF ... DT_A_HLD:
         return readRegisterU16(instr->Operand2);
     default:
-        printf("error in getOperandTwo\n");
+        printf("error in getOperand\n");
         exit(EXIT_FAILURE);
     }
 }
@@ -793,6 +786,8 @@ uint16_t getOperandTwo() {
         uint16_t hi = cpu.InstrData[1];
         return (lo | (hi << 8));
     }
+	case DT_E8:
+		return cpu.InstrData[0];
     case DT_RST0:
         return 0;
     case DT_RST10:
@@ -820,6 +815,8 @@ uint16_t getOperandTwo() {
     case DT_A_AF ... DT_A_HLD:
         return busRead(readRegisterU16(instr->Operand2));
     default:
+		printf("OP: %i\n", instr->Operand2);
+		printf("instr: %i\n", instr->Opcode);
         printf("error in getOperandTwo\n");
         exit(EXIT_FAILURE);
     }

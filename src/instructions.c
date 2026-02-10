@@ -112,11 +112,8 @@ void RET() {
 void DI() { cpu.IMEFlag = false; }
 void EI() { cpu.EnablingIME = true; }
 void HALT() {
-<<<<<<< HEAD
     cpu.Halted = true;
-=======
-    cpu.Halted = true;	
->>>>>>> refs/remotes/origin/main
+
 }
 
 void OR() {
@@ -160,7 +157,7 @@ void LD() {
         if ((op2 & 0xF) + (op3 & 0xF) > 0xF) {
             regs->F |= FLAG_H;
         }
-        if (op2 + op3 > 0xFF) {
+        if ((op2 & 0xFF) + (op3 & 0xFF) > 0xFF) {
             regs->F |= FLAG_C;
         }
         writeRegisterU16(DT_HL, op2 + op3);

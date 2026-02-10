@@ -15,6 +15,8 @@ uint8_t ioRead(uint16_t address) {
 	switch(address) {
 		case 0xFF04:
 			return (div >> 8);
+		case 0xFF44:
+			return 0x90;
 		default:
 			return memory[address];
 	}
