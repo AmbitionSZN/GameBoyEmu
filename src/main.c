@@ -16,25 +16,6 @@ uint8_t memory[0x10000] = {0};
 Cartridge cart;
 FILE *logFile;
 
-/*
-int main() {
-
-    while (1) {
-        fetchInstruction();
-        fetchData();
-        execute();
-        if (cpu.EnableIME) {
-            if (isNextInstr == true) {
-                cpu.IMEFlag = true;
-                isNextInstr = true;
-            } else {
-                isNextInstr = false;
-            }
-        }
-    }
-}
-*/
-
 /* We will use this renderer to draw into this window every frame. */
 static SDL_Window *window = NULL;
 static SDL_Renderer *renderer = NULL;

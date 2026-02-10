@@ -112,7 +112,11 @@ void RET() {
 void DI() { cpu.IMEFlag = false; }
 void EI() { cpu.EnablingIME = true; }
 void HALT() {
-	cpu.Halted = true;
+<<<<<<< HEAD
+    cpu.Halted = true;
+=======
+    cpu.Halted = true;	
+>>>>>>> refs/remotes/origin/main
 }
 
 void OR() {
@@ -151,7 +155,7 @@ void LD() {
     Instruction *instr = cpu.CurInstr;
     uint16_t op2 = getOperandTwo();
     if (instr->Operand3) {
-		regs->F = 0;
+        regs->F = 0;
         int8_t op3 = ((int8_t *)&cpu.InstrData)[0];
         if ((op2 & 0xF) + (op3 & 0xF) > 0xF) {
             regs->F |= FLAG_H;
@@ -429,7 +433,7 @@ void JR() {
 void CP() {
     CPURegisters *regs = &cpu.Regs;
     uint16_t op2 = getOperandTwo();
-	regs->F = 0;
+    regs->F = 0;
     if (regs->A - op2 == 0) {
         regs->F |= FLAG_Z;
     }

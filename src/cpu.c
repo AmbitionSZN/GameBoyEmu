@@ -666,11 +666,17 @@ void cpuStep() {
 
     } else {
 		emuCycles(1);
-
-		if (busRead(0xFF0F)) {
+<<<<<<< HEAD
+		if (busRead(0xFF0F) & busRead(0xFFFF)) {
 			cpu.Halted = false;
 		}
     }
+=======
+		if (busRead(0xFF0F) & busRead(0xFFFF)) {
+			cpu.Halted = false;
+		}
+	}
+>>>>>>> refs/remotes/origin/main
     if (cpu.IMEFlag) {
         handleInterrupts();
         cpu.EnablingIME = false;
