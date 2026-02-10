@@ -207,6 +207,8 @@ typedef struct {
 typedef struct {
     CPURegisters Regs;
     Instruction* CurInstr;
+	uint16_t Data1;
+	uint16_t Data2;
 	bool Halted;
 	uint8_t InstrData[2];
 	bool IMEFlag;
@@ -226,6 +228,8 @@ void cpuInit();
 
 uint8_t* getRegisterU8(DataType reg); 
 uint16_t* getRegisterU16(DataType reg); 
+bool isAddress(DataType type);
+bool isCondCode(DataType type);
 uint16_t getOperandTwo();
 uint16_t readRegisterU16(DataType reg);
 void writeRegisterU16(DataType reg, uint16_t val);

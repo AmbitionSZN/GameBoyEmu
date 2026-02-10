@@ -61,7 +61,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     logFile = fopen("../logs/log.txt", "w");
 
-    cart = LoadCartridge("../roms/01-special.gb");
+    cart = LoadCartridge("../roms/02-interrupts.gb");
     opcodesJsonParser("../Opcodes.json");
 
     return SDL_APP_CONTINUE; /* carry on with the program! */
@@ -88,8 +88,9 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     SDL_SetRenderDrawColorFloat(
         renderer, red, green, blue,
         SDL_ALPHA_OPAQUE_FLOAT); /* new color, full alpha. */
-
-    cpuStep();
+    for (size_t i = 0; i < 10; ++i) {
+        cpuStep();
+    }
 
     /* clear the window to the draw color. */
     SDL_RenderClear(renderer);
@@ -102,6 +103,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
 /* This function runs once at shutdown. */
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
-	fclose(logFile);
+    fclose(logFile);
     /* SDL will clean up the window/renderer for us. */
 }

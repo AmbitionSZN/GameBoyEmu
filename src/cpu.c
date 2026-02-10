@@ -701,6 +701,71 @@ uint8_t *getRegisterU8(DataType reg) {
     }
 }
 
+bool isAddress(DataType type) {
+	switch (type) {
+		case DT_A_C ... DT_A_HLD:
+			return true;
+		default:
+			return false;
+	}
+}
+
+bool isCondCode(DataType type) {
+	switch (type) {
+		case DT_CC_Z ... DT_CC_NC:
+			return true;
+		default:
+			return false;
+	}
+}
+
+uint16_t getOperand(DataType op) {
+    Instruction *instr = cpu.CurInstr;
+    CPURegisters *regs = &cpu.Regs;
+    switch (op) {
+    case DT_A ... DT_L:
+        return *getRegisterU8(op);
+    case DT_AF ... DT_HLD:
+        return readRegisterU16(op);
+    case DT_N8:
+        return cpu.InstrData[0];
+    case DT_N16: {
+        uint16_t lo = cpu.InstrData[0];
+        uint16_t hi = cpu.InstrData[1];
+        return (lo | (hi << 8));
+    }
+    case DT_RST0:
+        return 0;
+    case DT_RST10:
+        return 0x10;
+    case DT_RST18:
+        return 0x18;
+    case DT_RST20:
+        return 0x20;
+    case DT_RST28:
+        return 0x28;
+    case DT_RST30:
+        return 0x30;
+    case DT_RST38:
+        return 0x38;
+    case DT_A_C:
+        return 0xFF00 + regs->C;
+    case DT_A8:
+        return 0xFF00 + cpu.InstrData[0];
+    case DT_A16: {
+        uint16_t lo = cpu.InstrData[0];
+        uint16_t hi = cpu.InstrData[1];
+
+        return lo | (hi << 8);
+    }
+    case DT_A_AF ... DT_A_HLD:
+        return readRegisterU16(instr->Operand2);
+    default:
+        printf("error in getOperandTwo\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
 uint16_t getOperandTwo() {
     Instruction *instr = cpu.CurInstr;
     CPURegisters *regs = &cpu.Regs;

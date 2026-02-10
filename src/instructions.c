@@ -13,6 +13,7 @@ extern CPU cpu;
 
 void JP() {
     bool b;
+
     switch (cpu.CurInstr->Operand1) {
     case DT_HL:
         cpu.Regs.PC = readRegisterU16(DT_HL);
