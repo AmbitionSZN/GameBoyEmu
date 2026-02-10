@@ -541,6 +541,9 @@ void execute() {
     case MNEM_EI:
         EI();
         break;
+	case MNEM_HALT:
+		HALT();
+		break;
     case MNEM_LD:
         LD();
         break;
@@ -662,8 +665,11 @@ void cpuStep() {
         dbgPrint();
 
     } else {
-        printf("halted\n");
-        exit(0);
+		emuCycles(1);
+
+		if (busRead(0xFF0F)) {
+			cpu.Halted = false;
+		}
     }
     if (cpu.IMEFlag) {
         handleInterrupts();
