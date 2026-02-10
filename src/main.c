@@ -42,7 +42,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     logFile = fopen("../logs/log.txt", "w");
 
-    cart = LoadCartridge("../roms/03-op sp,hl.gb");
+    cart = LoadCartridge("../roms/04-op r,imm.gb");
     opcodesJsonParser("../Opcodes.json");
 
     return SDL_APP_CONTINUE; /* carry on with the program! */

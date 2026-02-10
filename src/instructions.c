@@ -111,10 +111,7 @@ void RET() {
 
 void DI() { cpu.IMEFlag = false; }
 void EI() { cpu.EnablingIME = true; }
-void HALT() {
-    cpu.Halted = true;
-
-}
+void HALT() { cpu.Halted = true; }
 
 void OR() {
     CPURegisters *regs = &cpu.Regs;
@@ -150,7 +147,17 @@ void AND() {
 void LD() {
     CPURegisters *regs = &cpu.Regs;
     Instruction *instr = cpu.CurInstr;
+    //	uint16_t op1 = getOperand(cpu.CurInstr->Operand1);
     uint16_t op2 = getOperandTwo();
+    /*
+        if (isAddress(instr->Operand1)) {
+            if (op2 > 0xFF) {
+                busWrite16(op1, op2);
+            } else {
+                busWrite(op1, op2);
+            }
+        }
+    */
     if (instr->Operand3) {
         regs->F = 0;
         int8_t op3 = ((int8_t *)&cpu.InstrData)[0];
@@ -176,7 +183,8 @@ void LD() {
         uint16_t addr = ((uint16_t)(cpu.InstrData[0])) |
                         ((uint16_t)(cpu.InstrData[1]) << 8);
         if (instr->Operand2 == DT_SP) {
-            busWrite16(addr, regs->SP);
+            busWrite(addr, regs->SP & 0xFF);
+            busWrite(addr + 1, regs->SP >> 8);
             break;
         }
 
@@ -395,18 +403,39 @@ void SUB() {
 
 void ADC() {
     CPURegisters *regs = &cpu.Regs;
-    uint16_t val = getOperandTwo() + checkFlag(FLAG_C);
+    uint8_t val = getOperandTwo();
+    uint8_t carry = checkFlag(FLAG_C);
     regs->F = 0;
-    if ((regs->A & 0xF) + (val & 0xF) > 0xF) {
+
+    if ((regs->A & 0xF) + (val & 0xF) + (carry) > 0xF) {
         regs->F |= FLAG_H;
     }
-    if (regs->A + val > 0xFF) {
+    if (regs->A + val + carry > 0xFF) {
         regs->F |= FLAG_C;
     }
-    regs->A += val;
+    regs->A = regs->A + val + carry;
     if (regs->A == 0) {
         regs->F |= FLAG_Z;
     }
+}
+
+void SBC() {
+    CPURegisters *regs = &cpu.Regs;
+    uint8_t val = getOperandTwo();
+    uint8_t carry = checkFlag(FLAG_C);
+    regs->F = 0;
+
+    if (((int)regs->A & 0xF) - ((int)val & 0xF) - ((int)carry) < 0) {
+        regs->F |= FLAG_H;
+    }
+    if ((int)regs->A - (int)val - (int)carry < 0) {
+        regs->F |= FLAG_C;
+    }
+    regs->A = regs->A - val - carry;
+    if (regs->A == 0) {
+        regs->F |= FLAG_Z;
+    }
+	regs->F |= FLAG_N;
 }
 
 void JR() {

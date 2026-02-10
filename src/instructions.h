@@ -25,6 +25,7 @@ void INC();
 void ADD();
 void SUB();
 void ADC();
+void SBC();
 void JR();
 void CP();
 void CPL();

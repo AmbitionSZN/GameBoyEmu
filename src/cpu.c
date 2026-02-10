@@ -580,6 +580,9 @@ void execute() {
     case MNEM_ADC:
         ADC();
         break;
+	case MNEM_SBC:
+		SBC();
+		break;
     case MNEM_SRL:
         SRL();
         break;
