@@ -526,9 +526,9 @@ void execute() {
     case MNEM_RET:
         RET();
         break;
-	case MNEM_RETI:
-		RETI();
-		break;
+    case MNEM_RETI:
+        RETI();
+        break;
     case MNEM_OR:
         OR();
         break;
@@ -544,9 +544,9 @@ void execute() {
     case MNEM_EI:
         EI();
         break;
-	case MNEM_HALT:
-		HALT();
-		break;
+    case MNEM_HALT:
+        HALT();
+        break;
     case MNEM_LD:
         LD();
         break;
@@ -583,11 +583,14 @@ void execute() {
     case MNEM_ADC:
         ADC();
         break;
-	case MNEM_SBC:
-		SBC();
-		break;
+    case MNEM_SBC:
+        SBC();
+        break;
     case MNEM_SRL:
         SRL();
+        break;
+    case MNEM_SCF:
+        SCF();
         break;
     case MNEM_CCF:
         CCF();
@@ -671,11 +674,11 @@ void cpuStep() {
         dbgPrint();
 
     } else {
-		emuCycles(1);
-		if (busRead(0xFF0F) & busRead(0xFFFF)) {
-			cpu.Halted = false;
-		}
-	}
+        emuCycles(1);
+        if (busRead(0xFF0F) & busRead(0xFFFF)) {
+            cpu.Halted = false;
+        }
+    }
     if (cpu.IMEFlag) {
         handleInterrupts();
         cpu.EnablingIME = false;
@@ -713,21 +716,21 @@ uint8_t *getRegisterU8(DataType reg) {
 }
 
 bool isAddress(DataType type) {
-	switch (type) {
-		case DT_A_C ... DT_A_HLD:
-			return true;
-		default:
-			return false;
-	}
+    switch (type) {
+    case DT_A_C ... DT_A_HLD:
+        return true;
+    default:
+        return false;
+    }
 }
 
 bool isCondCode(DataType type) {
-	switch (type) {
-		case DT_CC_Z ... DT_CC_NC:
-			return true;
-		default:
-			return false;
-	}
+    switch (type) {
+    case DT_CC_Z ... DT_CC_NC:
+        return true;
+    default:
+        return false;
+    }
 }
 
 uint16_t getOperand(DataType op) {
@@ -792,8 +795,8 @@ uint16_t getOperandTwo() {
         uint16_t hi = cpu.InstrData[1];
         return (lo | (hi << 8));
     }
-	case DT_E8:
-		return cpu.InstrData[0];
+    case DT_E8:
+        return cpu.InstrData[0];
     case DT_RST0:
         return 0;
     case DT_RST10:
@@ -821,9 +824,93 @@ uint16_t getOperandTwo() {
     case DT_A_AF ... DT_A_HLD:
         return busRead(readRegisterU16(instr->Operand2));
     default:
-		printf("OP: %i\n", instr->Operand2);
-		printf("instr: %i\n", instr->Opcode);
+        printf("OP: %i\n", instr->Operand2);
+        printf("instr: %i\n", instr->Opcode);
         printf("error in getOperandTwo\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+uint16_t op1Read() {
+    Instruction *instr = cpu.CurInstr;
+    CPURegisters *regs = &cpu.Regs;
+    switch (instr->Operand1) {
+    case DT_A ... DT_L:
+        return *getRegisterU8(instr->Operand1);
+    case DT_AF ... DT_HLD:
+        return readRegisterU16(instr->Operand1);
+    case DT_N8:
+        return cpu.InstrData[0];
+    case DT_N16: {
+        uint16_t lo = cpu.InstrData[0];
+        uint16_t hi = cpu.InstrData[1];
+        return (lo | (hi << 8));
+    }
+    case DT_E8:
+        return cpu.InstrData[0];
+    case DT_RST0:
+        return 0;
+    case DT_RST10:
+        return 0x10;
+    case DT_RST18:
+        return 0x18;
+    case DT_RST20:
+        return 0x20;
+    case DT_RST28:
+        return 0x28;
+    case DT_RST30:
+        return 0x30;
+    case DT_RST38:
+        return 0x38;
+    case DT_A_C:
+        return busRead(0xFF00 + regs->C);
+    case DT_A8:
+        return busRead(0xFF00 + cpu.InstrData[0]);
+    case DT_A16: {
+        uint16_t lo = cpu.InstrData[0];
+        uint16_t hi = cpu.InstrData[1];
+
+        return busRead(lo | (hi << 8));
+    }
+    case DT_A_AF ... DT_A_HLD:
+        return busRead(readRegisterU16(instr->Operand1));
+    default:
+        printf("OP: %i\n", instr->Operand1);
+        printf("instr: %i\n", instr->Opcode);
+        printf("error in op1Read\n");
+        exit(EXIT_FAILURE);
+    }
+}
+void op1Write(uint16_t data) {
+    Instruction *instr = cpu.CurInstr;
+    CPURegisters *regs = &cpu.Regs;
+    switch (instr->Operand1) {
+    case DT_A ... DT_L:
+        *getRegisterU8(instr->Operand1) = data;
+        break;
+    case DT_AF ... DT_HLD:
+        writeRegisterU16(instr->Operand1, data);
+        break;
+    case DT_A_C:
+        busWrite(0xFF00 + regs->C, data);
+        break;
+    case DT_A8:
+        busWrite(0xFF00 + cpu.InstrData[0], data);
+        break;
+    case DT_A16: {
+        uint16_t lo = cpu.InstrData[0];
+        uint16_t hi = cpu.InstrData[1];
+
+        busWrite(lo | (hi << 8), data);
+        break;
+    }
+    case DT_A_AF ... DT_A_HLD:
+        busWrite(readRegisterU16(instr->Operand1), data);
+        break;
+    default:
+        printf("OP: %i\n", instr->Operand1);
+        printf("instr: %i\n", instr->Opcode);
+        printf("error in op1Write\n");
         exit(EXIT_FAILURE);
     }
 }
@@ -878,6 +965,57 @@ void writeRegisterU16(DataType reg, uint16_t val) {
         break;
     case DT_PC:
         regs->PC = val;
+        break;
+    default:
+        printf("error in writeRegisterU16");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void WriteRegister(DataType reg, uint16_t data) {
+    CPURegisters *regs = &cpu.Regs;
+    switch (reg) {
+    case DT_A:
+        regs->A = data;
+        break;
+    case DT_F:
+        regs->F = data;
+        break;
+    case DT_B:
+        regs->B = data;
+        break;
+    case DT_C:
+        regs->C = data;
+        break;
+    case DT_D:
+        regs->D = data;
+        break;
+    case DT_E:
+        regs->E = data;
+        break;
+    case DT_H:
+        regs->H = data;
+        break;
+    case DT_L:
+        regs->L = data;
+        break;
+    case DT_AF:
+        *((uint16_t *)&regs->A) = reverseEndian((uint16_t *)&data);
+        break;
+    case DT_BC:
+        *((uint16_t *)&regs->B) = reverseEndian((uint16_t *)&data);
+        break;
+    case DT_DE:
+        *((uint16_t *)&regs->D) = reverseEndian((uint16_t *)&data);
+        break;
+    case DT_HL:
+        *((uint16_t *)&regs->H) = reverseEndian((uint16_t *)&data);
+        break;
+    case DT_SP:
+        regs->SP = data;
+        break;
+    case DT_PC:
+        regs->PC = data;
         break;
     default:
         printf("error in writeRegisterU16");

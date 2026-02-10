@@ -233,6 +233,8 @@ bool isCondCode(DataType type);
 bool is16Bit(DataType type);
 uint16_t getOperand(DataType op);
 uint16_t getOperandTwo();
+uint16_t op1Read();
+void op1Write(uint16_t data);
 uint16_t readRegisterU16(DataType reg);
 void writeRegisterU16(DataType reg, uint16_t val);
 

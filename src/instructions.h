@@ -32,6 +32,7 @@ void CP();
 void CPL();
 void RRA();
 void SRL();
+void SCF();
 void CCF();
 void SWAP();
 void RR();

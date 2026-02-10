@@ -110,8 +110,8 @@ void RET() {
 }
 
 void RETI() {
-	EI();
-	writeRegisterU16(DT_PC, stackPop16());
+    EI();
+    writeRegisterU16(DT_PC, stackPop16());
 }
 
 void DI() { cpu.IMEFlag = false; }
@@ -440,7 +440,7 @@ void SBC() {
     if (regs->A == 0) {
         regs->F |= FLAG_Z;
     }
-	regs->F |= FLAG_N;
+    regs->F |= FLAG_N;
 }
 
 void JR() {
@@ -484,57 +484,37 @@ void CPL() {
 }
 
 void RRA() {
-
     CPURegisters *regs = &cpu.Regs;
     bool oldCarry = checkFlag(FLAG_C);
     regs->F = 0;
-    if ((regs->A & 1) != 0) {
-        regs->F = FLAG_C;
+    if ((regs->A & 1)) {
+        regs->F |= FLAG_C;
     }
     regs->A >>= 1;
     if (oldCarry) {
-        regs->A |= 0b10000000;
+        regs->A |= (1 << 7);
     }
 }
 
 void RR() {
     CPURegisters *regs = &cpu.Regs;
-    uint8_t op1;
+    Instruction *instr = cpu.CurInstr;
     bool oldCarry = checkFlag(FLAG_C);
     regs->F = 0;
-    switch (cpu.CurInstr->Operand1) {
-    case DT_A ... DT_L:
-        op1 = *getRegisterU8(cpu.CurInstr->Operand1);
-        if ((op1 & 1) != 0) {
-            regs->F |= FLAG_C;
-        }
-        op1 >>= 1;
-        if (oldCarry) {
-            op1 |= 0b10000000;
-        }
-        if (op1 == 0) {
-            regs->F |= FLAG_Z;
-        }
-        *getRegisterU8(cpu.CurInstr->Operand1) = op1;
-        break;
-    case DT_A_HL:
-        op1 = busRead(readRegisterU16(DT_HL));
-        if ((op1 & 1) != 0) {
-            regs->F |= FLAG_C;
-        }
-        op1 >>= 1;
-        if (oldCarry) {
-            op1 |= 0b10000000;
-        }
-        if (op1 == 0) {
-            regs->F |= FLAG_Z;
-        }
-        busWrite(readRegisterU16(DT_HL), op1);
-        break;
-    default:
-        printf("error in RR\n");
-        exit(EXIT_FAILURE);
+    uint8_t op1 = op1Read();
+
+    if ((op1 & 1)) {
+        regs->F |= FLAG_C;
     }
+    op1 >>= 1;
+    if (oldCarry) {
+        op1 |= (1 << 7);
+    }
+    if (op1 == 0) {
+        regs->F |= FLAG_Z;
+    }
+
+    op1Write(op1);
 }
 
 void SRL() {
@@ -570,6 +550,12 @@ void SRL() {
         printf("error in SRL\n");
         exit(EXIT_FAILURE);
     }
+}
+
+void SCF() {
+    cpu.Regs.F &= ~FLAG_N;
+    cpu.Regs.F &= ~FLAG_H;
+    cpu.Regs.F |= FLAG_C;
 }
 
 void CCF() {
