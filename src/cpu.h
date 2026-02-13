@@ -230,7 +230,7 @@ uint8_t* getRegisterU8(DataType reg);
 uint16_t* getRegisterU16(DataType reg); 
 bool isAddress(DataType type);
 bool isCondCode(DataType type);
-bool is16Bit(DataType type);
+bool is16BitReg(DataType type);
 uint16_t getOperand(DataType op);
 uint16_t getOperandTwo();
 uint16_t op1Read();

@@ -38,12 +38,12 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     SDL_SetRenderLogicalPresentation(renderer, 640, 480,
                                      SDL_LOGICAL_PRESENTATION_LETTERBOX);
 
-    cpuInit();
 
     logFile = fopen("../logs/log.txt", "w");
 
     cart = LoadCartridge("../roms/09-op r,r.gb");
     opcodesJsonParser("../Opcodes.json");
+    cpuInit();
 
     return SDL_APP_CONTINUE; /* carry on with the program! */
 }

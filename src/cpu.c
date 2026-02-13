@@ -15,6 +15,7 @@
 
 extern CPU cpu;
 extern uint8_t memory[0x10000];
+extern FILE *logFile;
 
 Instruction instructions[512];
 
@@ -430,6 +431,17 @@ bool CheckCondition(DataType condition) {
     }
 }
 
+void gbDoctorPrint(FILE *fptr) {
+    CPURegisters *regs = &cpu.Regs;
+    fprintf(fptr,
+            "A:%.2X F:%.2X B:%.2X C:%.2X D:%.2X E:%.2X H:%.2X L:%.2X "
+            "SP:%.4X PC:%.4X PCMEM:%.2X,%.2X,%.2X,%.2X\n",
+            regs->A, regs->F, regs->B, regs->C, regs->D, regs->E, regs->H,
+            regs->L, regs->SP, regs->PC, busRead(regs->PC),
+            busRead(regs->PC + 1), busRead(regs->PC + 2),
+            busRead(regs->PC + 3));
+}
+
 void fetchInstruction() {
     uint16_t opcode = busRead(cpu.Regs.PC);
     if (opcode == 0xCB) {
@@ -441,8 +453,6 @@ void fetchInstruction() {
         cpu.CurInstr = &instructions[opcode];
         emuCycles(1);
     }
-
-    //   gbPrint();
 }
 
 void fetchData() {
@@ -471,17 +481,6 @@ void gbPrint() {
            cpu.Regs.H, cpu.Regs.L, cpu.Regs.SP, cpu.Regs.PC,
            cpu.Regs.F & FLAG_Z, cpu.Regs.F & FLAG_N, cpu.Regs.F & FLAG_H,
            cpu.Regs.F & FLAG_C);
-}
-
-void gbDoctorPrint(FILE *fptr) {
-    CPURegisters *regs = &cpu.Regs;
-    fprintf(fptr,
-            "A:%.2X F:%.2X B:%.2X C:%.2X D:%.2X E:%.2X H:%.2X L:%.2X "
-            "SP:%.4X PC:%.4X PCMEM:%.2X,%.2X,%.2X,%.2X\n",
-            regs->A, regs->F, regs->B, regs->C, regs->D, regs->E, regs->H,
-            regs->L, regs->SP, regs->PC, busRead(regs->PC),
-            busRead(regs->PC + 1), busRead(regs->PC + 2),
-            busRead(regs->PC + 3));
 }
 
 void printInstrs(bool print) {
@@ -577,8 +576,26 @@ void execute() {
     case MNEM_RRA:
         RRA();
         break;
+    case MNEM_RLA:
+        RLA();
+        break;
+    case MNEM_RLCA:
+        RLCA();
+        break;
+    case MNEM_RRCA:
+        RRCA();
+        break;
     case MNEM_RR:
         RR();
+        break;
+    case MNEM_RL:
+        RL();
+        break;
+    case MNEM_RRC:
+        RRC();
+        break;
+    case MNEM_RLC:
+        RLC();
         break;
     case MNEM_ADC:
         ADC();
@@ -588,6 +605,12 @@ void execute() {
         break;
     case MNEM_SRL:
         SRL();
+        break;
+    case MNEM_SRA:
+        SRA();
+        break;
+    case MNEM_SLA:
+        SLA();
         break;
     case MNEM_SCF:
         SCF();
@@ -604,6 +627,7 @@ void execute() {
     case MNEM_DAA:
         DAA();
         break;
+
     default:
         printf("Instruction not implemented:\n");
         printf("\tOpcode: %2.2X\n", cpu.CurInstr->Opcode);
@@ -616,6 +640,7 @@ void execute() {
 void interruptHandle(uint16_t address) {
     stackPush16(cpu.Regs.PC);
     cpu.Regs.PC = address;
+    //    printgbDoctor = false;
 }
 
 bool interruptCheck(uint16_t address, Interrupt it) {
@@ -659,19 +684,22 @@ void cpuInit() {
     memory[0xFFFF] = 0;
     cpu.IMEFlag = false;
     cpu.EnablingIME = false;
+    gbDoctorPrint(logFile);
 }
 
-extern FILE *logFile;
 void cpuStep() {
     if (!cpu.Halted) {
-
-        gbDoctorPrint(logFile);
         fetchInstruction();
         printInstrs(false);
         fetchData();
         execute();
+        gbPrint();
+        if (cpu.Regs.PC == 0xdefa) {
+        //    exit(0);
+        }
+        gbDoctorPrint(logFile);
         dbgUpdate();
-        dbgPrint();
+ //       dbgPrint();
 
     } else {
         emuCycles(1);
@@ -722,6 +750,15 @@ bool isAddress(DataType type) {
     default:
         return false;
     }
+}
+
+bool is16BitReg(DataType type) {
+	switch(type) {
+		case DT_AF ... DT_HLD:
+			return true;
+		default:
+			return false;
+	}
 }
 
 bool isCondCode(DataType type) {
