@@ -673,7 +673,6 @@ void execute() {
 void interruptHandle(uint16_t address) {
     stackPush16(cpu.Regs.PC);
     cpu.Regs.PC = address;
-    //    printgbDoctor = false;
 }
 
 bool interruptCheck(uint16_t address, Interrupt it) {
@@ -723,10 +722,11 @@ void cpuInit() {
 void cpuStep() {
     if (!cpu.Halted) {
         fetchInstruction();
+        gbPrint();
         printInstrs(false);
         fetchData();
         execute();
-        gbPrint();
+        //gbPrint();
         gbDoctorPrint(logFile);
         dbgUpdate();
              dbgPrint();
@@ -1044,7 +1044,7 @@ uint16_t op2Read() {
     default:
         printf("OP: %i\n", instr->Operand2);
         printf("instr: %i\n", instr->Opcode);
-        printf("error in getOperandTwo\n");
+        printf("error in op2Read\n");
         exit(EXIT_FAILURE);
     }
 }
@@ -1073,12 +1073,12 @@ void op2Write(uint16_t data) {
         break;
     }
     case DT_A_AF ... DT_A_HLD:
-        busWrite(readRegisterU16(instr->Operand1), data);
+        busWrite(readRegisterU16(instr->Operand2), data);
         break;
     default:
         printf("OP: %i\n", instr->Operand1);
         printf("instr: %i\n", instr->Opcode);
-        printf("error in op1Write\n");
+        printf("error in op2Write\n");
         exit(EXIT_FAILURE);
     }
 }
@@ -1186,7 +1186,7 @@ void WriteRegister(DataType reg, uint16_t data) {
         regs->PC = data;
         break;
     default:
-        printf("error in writeRegisterU16");
+        printf("error in writeRegister");
         exit(EXIT_FAILURE);
     }
 }
