@@ -177,35 +177,7 @@ void LD() {
     }
 
     op1Write(op2);
-    /*
-        switch (instr->Operand1) {
-        case DT_A ... DT_L:
-            *getRegisterU8(instr->Operand1) = op2;
-            break;
-        case DT_A_AF ... DT_A_HLD: {
 
-            busWrite(readRegisterU16(instr->Operand1), op2);
-            break;
-            }
-        case DT_A16: {
-            uint16_t addr = ((uint16_t)(cpu.InstrData[0])) |
-                            ((uint16_t)(cpu.InstrData[1]) << 8);
-            if (instr->Operand2 == DT_SP) {
-                busWrite(addr, regs->SP & 0xFF);
-                busWrite(addr + 1, regs->SP >> 8);
-                break;
-            }
-            busWrite(addr, op2);
-            break;
-        }
-        case DT_AF ... DT_HLD:
-            writeRegisterU16(instr->Operand1, op2);
-            break;
-        default:
-            printf("error in LD\n");
-            exit(EXIT_FAILURE);
-        }
-    */
     if (instr->Operand1 == DT_HLI || instr->Operand2 == DT_HLI ||
         instr->Operand1 == DT_A_HLI || instr->Operand2 == DT_A_HLI) {
         uint16_t val = readRegisterU16(DT_HL);
@@ -227,7 +199,8 @@ void DEC() {
     CPURegisters *regs = &cpu.Regs;
 
     if (is16BitReg(instr->Operand1)) {
-        uint16_t data = readRegisterU16(instr->Operand1) - 1;
+        uint16_t data = readRegisterU16(instr->Operand1);
+		data -= 1;
         writeRegisterU16(instr->Operand1, data);
     } else {
         uint8_t op1 = op1Read();
@@ -377,7 +350,7 @@ void SUB() {
 void ADC() {
     CPURegisters *regs = &cpu.Regs;
     uint8_t op2 = getOperandTwo();
-    uint8_t carry = checkFlag(FLAG_C);
+    bool carry = checkFlag(FLAG_C);
     regs->F = 0;
 
     if ((regs->A & 0xF) + (op2 & 0xF) + (carry) > 0xF) {
@@ -395,7 +368,7 @@ void ADC() {
 void SBC() {
     CPURegisters *regs = &cpu.Regs;
     uint8_t op2 = getOperandTwo();
-    uint8_t carry = checkFlag(FLAG_C);
+    bool carry = checkFlag(FLAG_C);
     regs->F = 0;
 
     if (((int)regs->A & 0xF) - ((int)op2 & 0xF) - ((int)carry) < 0) {
@@ -549,7 +522,10 @@ void RRC() {
     CPURegisters *regs = &cpu.Regs;
     regs->F = 0;
     uint8_t op1 = op1Read();
-    bool bit0 = (op1 & 1);
+	bool bit0 = false;
+	if (op1 & 1) {
+		bit0 = true;
+	}
 
     op1 >>= 1;
 
@@ -567,8 +543,11 @@ void RRC() {
 void RLC() {
     CPURegisters *regs = &cpu.Regs;
     regs->F = 0;
+	bool bit7 = false;
     uint8_t op1 = op1Read();
-    bool bit7 = (op1 & (1 << 7));
+	if (op1 & (1 << 7)) {
+		bit7 = true;
+	}
 
     op1 <<= 1;
 

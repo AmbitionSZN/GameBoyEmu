@@ -176,7 +176,7 @@ DataType getOperandType(cJSON *operand, char *mnemonic, uint8_t opcode) {
 
 Mnemonic getMnemonic(Instruction *instr) {
 
-    if (instr->Opcode == 0) {
+    if (strcmp(instr->StrMnemonic, "NOP") == 0) {
         return MNEM_NOP;
     } else if (strcmp(instr->StrMnemonic, "JP") == 0) {
         return MNEM_JP;
@@ -470,7 +470,8 @@ void fetchInstruction() {
     uint16_t opcode = busRead(cpu.Regs.PC);
     if (opcode == 0xCB) {
         cpu.Regs.PC++;
-        opcode = (busRead(cpu.Regs.PC) + 0x100);
+		opcode = busRead(cpu.Regs.PC);
+		opcode += 0x100;
         cpu.CurInstr = &instructions[opcode];
         emuCycles(1);
     } else {
@@ -722,13 +723,13 @@ void cpuInit() {
 void cpuStep() {
     if (!cpu.Halted) {
         fetchInstruction();
-        gbPrint();
         printInstrs(false);
         fetchData();
         execute();
-        //gbPrint();
+    //    gbPrint();
         gbDoctorPrint(logFile);
         dbgUpdate();
+
              dbgPrint();
 
     } else {
