@@ -57,15 +57,16 @@ uint16_t busRead16(uint16_t address) {
 }
 
 void busWrite(uint16_t address, uint8_t val) {
-	if (address == 0xDEF8 || address == 0xDEF9 || address == 0xDEFA) {
+	if (address == 0xDEF8 || address == 0xDEF9) {
 		printf("address: %X\n", address);
 		printf("val: %X\n", val);
 		printf("pc: %X\n", cpu.Regs.PC);
 		printf("A: %X\n", cpu.Regs.A);
 		uint16_t lo = cpu.InstrData[0];
 		uint16_t hi = cpu.InstrData[1];
-
-		printf("opcode: %X\n\n", (lo | hi << 8));
+		if (val == 0xCB) {
+			printf("asdasd\n");
+		}
 
 	}
 

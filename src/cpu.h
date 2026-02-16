@@ -153,6 +153,14 @@ typedef enum {
 	DT_RST28,
 	DT_RST30,
 	DT_RST38,
+	DT_U3_0,
+	DT_U3_1,
+	DT_U3_2,
+	DT_U3_3,
+	DT_U3_4,
+	DT_U3_5,
+	DT_U3_6,
+	DT_U3_7,
 	DT_A_C,
 	DT_A8,
 	DT_A16,
@@ -234,7 +242,9 @@ bool is16BitReg(DataType type);
 uint16_t getOperand(DataType op);
 uint16_t getOperandTwo();
 uint16_t op1Read();
+uint16_t op2Read();
 void op1Write(uint16_t data);
+void op2Write(uint16_t data);
 uint16_t readRegisterU16(DataType reg);
 void writeRegisterU16(DataType reg, uint16_t val);
 

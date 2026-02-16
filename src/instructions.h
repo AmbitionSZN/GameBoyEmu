@@ -44,5 +44,8 @@ void SRA();
 void SCF();
 void CCF();
 void SWAP();
+void BIT();
+void RES();
+void SET();
 void RST();
 void DAA();

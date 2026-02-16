@@ -140,6 +140,30 @@ DataType getOperandType(cJSON *operand, char *mnemonic, uint8_t opcode) {
     if (strcmp(op, "$38") == 0) {
         return DT_RST38;
     }
+    if (strcmp(op, "0") == 0) {
+        return DT_U3_0;
+    }
+    if (strcmp(op, "1") == 0) {
+        return DT_U3_1;
+    }
+    if (strcmp(op, "2") == 0) {
+        return DT_U3_2;
+    }
+    if (strcmp(op, "3") == 0) {
+        return DT_U3_3;
+    }
+    if (strcmp(op, "4") == 0) {
+        return DT_U3_4;
+    }
+    if (strcmp(op, "5") == 0) {
+        return DT_U3_5;
+    }
+    if (strcmp(op, "6") == 0) {
+        return DT_U3_6;
+    }
+    if (strcmp(op, "7") == 0) {
+        return DT_U3_7;
+    }
     if (strcmp(op, "a8") == 0) {
         return DT_A8;
     }
@@ -624,6 +648,15 @@ void execute() {
     case MNEM_RST:
         RST();
         break;
+	case MNEM_BIT:
+		BIT();
+		break;
+	case MNEM_RES:
+		RES();
+		break;
+	case MNEM_SET:
+		SET();
+		break;
     case MNEM_DAA:
         DAA();
         break;
@@ -694,12 +727,9 @@ void cpuStep() {
         fetchData();
         execute();
         gbPrint();
-        if (cpu.Regs.PC == 0xdefa) {
-        //    exit(0);
-        }
         gbDoctorPrint(logFile);
         dbgUpdate();
- //       dbgPrint();
+             dbgPrint();
 
     } else {
         emuCycles(1);
@@ -753,12 +783,12 @@ bool isAddress(DataType type) {
 }
 
 bool is16BitReg(DataType type) {
-	switch(type) {
-		case DT_AF ... DT_HLD:
-			return true;
-		default:
-			return false;
-	}
+    switch (type) {
+    case DT_AF ... DT_HLD:
+        return true;
+    default:
+        return false;
+    }
 }
 
 bool isCondCode(DataType type) {
@@ -885,6 +915,22 @@ uint16_t op1Read() {
     }
     case DT_E8:
         return cpu.InstrData[0];
+	case DT_U3_0:
+			return 0;
+	case DT_U3_1:
+			return 1;
+	case DT_U3_2:
+			return 2;
+	case DT_U3_3:
+			return 3;
+	case DT_U3_4:
+			return 4;
+	case DT_U3_5:
+			return 5;
+	case DT_U3_6:
+			return 6;
+	case DT_U3_7:
+			return 7;
     case DT_RST0:
         return 0;
     case DT_RST10:
@@ -927,6 +973,91 @@ void op1Write(uint16_t data) {
         break;
     case DT_AF ... DT_HLD:
         writeRegisterU16(instr->Operand1, data);
+        break;
+    case DT_A_C:
+        busWrite(0xFF00 + regs->C, data);
+        break;
+    case DT_A8:
+        busWrite(0xFF00 + cpu.InstrData[0], data);
+        break;
+    case DT_A16: {
+        uint16_t lo = cpu.InstrData[0];
+        uint16_t hi = cpu.InstrData[1];
+
+        busWrite(lo | (hi << 8), data);
+        break;
+    }
+    case DT_A_AF ... DT_A_HLD:
+        busWrite(readRegisterU16(instr->Operand1), data);
+        break;
+    default:
+        printf("OP: %i\n", instr->Operand1);
+        printf("instr: %i\n", instr->Opcode);
+        printf("error in op1Write\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+uint16_t op2Read() {
+    Instruction *instr = cpu.CurInstr;
+    CPURegisters *regs = &cpu.Regs;
+    switch (instr->Operand2) {
+    case DT_A ... DT_L:
+        return *getRegisterU8(instr->Operand2);
+    case DT_AF ... DT_HLD:
+        return readRegisterU16(instr->Operand2);
+    case DT_N8:
+        return cpu.InstrData[0];
+    case DT_N16: {
+        uint16_t lo = cpu.InstrData[0];
+        uint16_t hi = cpu.InstrData[1];
+        return (lo | (hi << 8));
+    }
+    case DT_E8:
+        return cpu.InstrData[0];
+    case DT_RST0:
+        return 0;
+    case DT_RST10:
+        return 0x10;
+    case DT_RST18:
+        return 0x18;
+    case DT_RST20:
+        return 0x20;
+    case DT_RST28:
+        return 0x28;
+    case DT_RST30:
+        return 0x30;
+    case DT_RST38:
+        return 0x38;
+    case DT_A_C:
+        return busRead(0xFF00 + regs->C);
+    case DT_A8:
+        return busRead(0xFF00 + cpu.InstrData[0]);
+    case DT_A16: {
+        uint16_t lo = cpu.InstrData[0];
+        uint16_t hi = cpu.InstrData[1];
+
+        return busRead(lo | (hi << 8));
+    }
+    case DT_A_AF ... DT_A_HLD:
+        return busRead(readRegisterU16(instr->Operand2));
+    default:
+        printf("OP: %i\n", instr->Operand2);
+        printf("instr: %i\n", instr->Opcode);
+        printf("error in getOperandTwo\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void op2Write(uint16_t data) {
+    Instruction *instr = cpu.CurInstr;
+    CPURegisters *regs = &cpu.Regs;
+    switch (instr->Operand2) {
+    case DT_A ... DT_L:
+        *getRegisterU8(instr->Operand2) = data;
+        break;
+    case DT_AF ... DT_HLD:
+        writeRegisterU16(instr->Operand2, data);
         break;
     case DT_A_C:
         busWrite(0xFF00 + regs->C, data);

@@ -158,7 +158,8 @@ void LD() {
         uint16_t addr = ((uint16_t)(cpu.InstrData[0])) |
                         ((uint16_t)(cpu.InstrData[1]) << 8);
         busWrite(addr, regs->SP & 0xFF);
-        busWrite(addr + 1, regs->SP >> 8);
+        addr += 1;
+        busWrite(addr, regs->SP >> 8);
         return;
     }
 
@@ -241,54 +242,9 @@ void DEC() {
         } else {
             regs->F &= ~FLAG_Z;
         }
+        regs->F |= FLAG_N;
         op1Write(op1);
     }
-    /*
-    switch (instr->Operand1) {
-    case DT_A ... DT_L: {
-        uint8_t *reg = getRegisterU8(instr->Operand1);
-        if ((int)(*reg & 0xF) - 1 < 0) {
-            regs->F |= FLAG_H;
-        } else {
-            regs->F &= ~FLAG_H;
-        }
-        *reg -= 1;
-        if (*reg == 0) {
-            regs->F |= FLAG_Z;
-        } else {
-            regs->F &= ~FLAG_Z;
-        }
-        regs->F |= FLAG_N;
-        break;
-    }
-    case DT_BC ... DT_PC: {
-        writeRegisterU16(instr->Operand1, readRegisterU16(instr->Operand1) - 1);
-        break;
-    }
-    case DT_A_HL: {
-        uint16_t addr = readRegisterU16(instr->Operand1);
-        uint8_t op1 = busRead(addr);
-        if ((int)(op1 & 0xF) - 1 < 0) {
-            regs->F |= FLAG_H;
-        } else {
-            regs->F &= ~FLAG_H;
-        }
-        op1 -= 1;
-        busWrite(addr, op1 - 1);
-        if (op1 - 1 == 0) {
-            regs->F |= FLAG_Z;
-        } else {
-            regs->F &= ~FLAG_Z;
-        }
-        regs->F |= FLAG_N;
-        break;
-    }
-
-    default:
-        printf("error in DEC\n");
-        exit(EXIT_FAILURE);
-    }
-    */
 };
 
 void INC() {
@@ -626,9 +582,6 @@ void RLC() {
     }
 
     op1Write(op1);
-    printf("pc: %X\n", cpu.Regs.PC);
-    printf("opcode: %X\n\n", cpu.CurInstr->Opcode);
-    exit(0);
 }
 
 void SRL() {
@@ -722,6 +675,37 @@ void SWAP() {
         printf("error in SWAP\n");
         exit(EXIT_FAILURE);
     }
+}
+
+void BIT() {
+    uint8_t op1 = op1Read();
+    uint8_t op2 = op2Read();
+    if (!((1 << op1) & op2)) {
+        cpu.Regs.F |= FLAG_Z;
+    } else {
+        cpu.Regs.F &= ~FLAG_Z;
+    }
+    cpu.Regs.F &= ~FLAG_N;
+    cpu.Regs.F |= FLAG_H;
+}
+
+void RES() {
+    uint8_t op1 = op1Read();
+    uint8_t op2 = op2Read();
+
+    op2 &= ~(1 << op1);
+
+	op2Write(op2);
+
+}
+
+void SET() {
+    uint8_t op1 = op1Read();
+    uint8_t op2 = op2Read();
+
+    op2 |= 1 << op1;
+
+	op2Write(op2);
 }
 
 void RST() {
