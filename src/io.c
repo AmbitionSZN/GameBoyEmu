@@ -1,4 +1,5 @@
 #include "io.h"
+#include "bus.h"
 #include "cpu.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -24,13 +25,15 @@ uint8_t ioRead(uint16_t address) {
 
 
 
-void ioWrite(uint16_t address, uint8_t val) {
+void ioWrite(uint16_t address, uint8_t data) {
 	switch (address) {
 		case 0xFF04:
 			div = 0;
 			break;
+		case 0xFF46:
+			DMATransfer(address, data);
 		default:
-			memory[address] = val;
+			memory[address] = data;
 	}
 }
 
@@ -62,5 +65,12 @@ void timerTick() {
 			requestInterrupt(INT_TIMER);	
 		}
 	}
+
+}
+
+void DMATransfer(uint16_t dest, uint16_t src) {
+	src *= 0x100;
+	uint8_t data = busRead(src);
+	busWrite(dest, data);
 
 }

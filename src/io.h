@@ -2,5 +2,6 @@
 #include <stdint.h>
 
 uint8_t ioRead(uint16_t address);
-void ioWrite(uint16_t address, uint8_t value);
+void ioWrite(uint16_t address, uint8_t data);
 void timerTick();
+void DMATransfer(uint16_t dest, uint16_t src);

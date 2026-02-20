@@ -29,10 +29,9 @@ uint8_t busRead(uint16_t address) {
         return 0;
     } else if (address < 0xFEA0) {
         // OAM
-        // TODO
         // printf("UNSUPPORTED bus read(%04X)\n", address);
         // exit(EXIT_FAILURE);
-        return 0x0;
+        return 0;
     } else if (address < 0xFF00) {
         // reserved unusable...
         return 0;
@@ -56,7 +55,7 @@ uint16_t busRead16(uint16_t address) {
     return (lo | hi << 8);
 }
 
-void busWrite(uint16_t address, uint8_t val) {
+void busWrite(uint16_t address, uint8_t data) {
     if (address < 0x8000) {
         // ROM Data
 		printf("attempt to write to rom\n");
@@ -65,15 +64,14 @@ void busWrite(uint16_t address, uint8_t val) {
         return;
     } else if (address < 0xA000) {
         // Char/Map Data
-        printf("UNSUPPORTED bus_write(%04X)\n", address);
-        //exit(EXIT_FAILURE);
+		memory[address] = data;
     } else if (address < 0xC000) {
         // EXT-RAM
-        cartWrite(address, val);
+        cartWrite(address, data);
         return;
     } else if (address < 0xE000) {
         // WRAM
-        memory[address] = val;
+        memory[address] = data;
         return;
     } else if (address < 0xFE00) {
         // reserved echo ram
@@ -89,15 +87,15 @@ void busWrite(uint16_t address, uint8_t val) {
         exit(EXIT_FAILURE);
     } else if (address < 0xFF80) {
         // IO Registers...
-        ioWrite(address, val);
+        ioWrite(address, data);
         return;
     } else if (address < 0xFFFF) {
         // HRam
-        memory[address] = val;
+        memory[address] = data;
         return;
     } else if (address == 0xFFFF) {
         // CPU enable register
-        memory[address] = val;
+        memory[address] = data;
         return;
     } else {
         printf("error in busWrite\n");
@@ -105,7 +103,7 @@ void busWrite(uint16_t address, uint8_t val) {
     }
 }
 
-void busWrite16(uint16_t address, uint16_t val) {
-    busWrite(address, (val & 0xFF));
-    busWrite(address + 1, (val >> 8) & 0xFF);
+void busWrite16(uint16_t address, uint16_t data) {
+    busWrite(address, (data & 0xFF));
+    busWrite(address + 1, (data >> 8) & 0xFF);
 }

@@ -14,6 +14,8 @@ add_executable(${PROJECT_NAME}
 	src/io.c
 	src/dbg.c
 	src/emu.c
+	src/ppu.c
+	src/oam.c
 
 	src/cJSON.c
 )
