@@ -1,4 +1,5 @@
 #include "emu.h"
+#include "ppu.h"
 #include <SDL3/SDL_video.h>
 #define SDL_MAIN_USE_CALLBACKS 1 /* use the callbacks instead of main() */
 #include "cart.h"
@@ -16,6 +17,7 @@ FILE *logFile;
 
 /* We will use this renderer to draw into this window every frame. */
 static SDL_Window *window = NULL;
+static SDL_Window *tileWindow = NULL;
 static SDL_Renderer *renderer = NULL;
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
@@ -69,6 +71,13 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     const float blue = (float)(0.5 + 0.5 * SDL_sin(now + SDL_PI_D * 4 / 3));
 
     SDL_SetRenderDrawColorFloat(renderer, red, green, blue, SDL_ALPHA_OPAQUE_FLOAT);
+	int w, h;
+	SDL_GetWindowSize(tileWindow, &w, &h);
+	SDL_Surface* tiles = getTileSurfaces(w, h);
+	for (size_t i = 0; i < 0x6000; ++i) {
+			
+	}
+
     SDL_RenderClear(renderer);
     SDL_RenderPresent(renderer);
 
