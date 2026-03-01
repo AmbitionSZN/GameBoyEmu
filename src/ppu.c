@@ -50,23 +50,21 @@ void renderTiles(SDL_Renderer *renderer, int winW, int winH) {
 }
 
 void renderTile(SDL_Renderer *renderer, int winW, int winH, int x, int y, uint8_t *tileData) {
-    size_t colSize = winW / tilesPerColumn;
-    size_t rowSize = winH / tilesPerRow;
     for (size_t byte = 0; byte < 16;) {
 		int row = byte / 2;
         uint8_t byte1 = tileData[byte];
 		byte++;
         uint8_t byte2 = tileData[byte];
 		byte++;
-        for (int pxIDX = 7; pxIDX >= 0; pxIDX--) {
-            uint8_t loBit = (byte1 & (1 << pxIDX));
-            uint8_t hiBit = (byte2 & (1 << pxIDX));
+        for (int pxIdx = 7; pxIdx >= 0; pxIdx--) {
+            uint8_t loBit = !!(byte1 & (1 << pxIdx));
+            uint8_t hiBit = !!(byte2 & (1 << pxIdx));
             uint32_t color = tileColors[loBit | (hiBit << 1)];
             SDL_FRect pixel;
             pixel.w = ((float)winW / tilesPerRow) / 8;
             pixel.h = ((float)winH / tilesPerColumn) / 8;
             pixel.y = y + (row * pixel.h);
-            pixel.x = x + (pixel.w * (7 - pxIDX));
+            pixel.x = x + (pixel.w * (7 - pxIdx));
             uint8_t r = (color & (0xFF << 4)) >> 4;
             uint8_t g = (color & (0xFF << 2)) >> 2;
             uint8_t b = (color & 0xFF);
