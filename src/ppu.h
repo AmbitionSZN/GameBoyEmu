@@ -1,6 +1,6 @@
 #pragma once
 
-#include <SDL3/SDL_surface.h>
+#include <SDL3/SDL_render.h>
 
-SDL_Surface* getTileSurfaces(int winW, int winH);
-
+void renderTiles(SDL_Renderer *renderer, int winW, int winH);
+void renderTile(SDL_Renderer *renderer, int winW, int winH, int x, int y, uint8_t *tileData);

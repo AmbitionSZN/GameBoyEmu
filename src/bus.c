@@ -16,8 +16,7 @@ uint8_t busRead(uint16_t address) {
     } else if (address < 0xA000) {
         // Char/Map Data
         // TODO
-        printf("UNSUPPORTED bus read(%04X)\n", address);
-		return 0;
+		return memory[address];
     } else if (address < 0xC000) {
         // Cartridge RAM
 		return cartRead(address);
@@ -65,6 +64,7 @@ void busWrite(uint16_t address, uint8_t data) {
     } else if (address < 0xA000) {
         // Char/Map Data
 		memory[address] = data;
+		return;
     } else if (address < 0xC000) {
         // EXT-RAM
         cartWrite(address, data);

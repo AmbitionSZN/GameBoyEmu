@@ -1,5 +1,6 @@
 #include "emu.h"
 #include "ppu.h"
+#include <SDL3/SDL_render.h>
 #include <SDL3/SDL_video.h>
 #define SDL_MAIN_USE_CALLBACKS 1 /* use the callbacks instead of main() */
 #include "cart.h"
@@ -15,10 +16,10 @@ uint8_t memory[0x10000] = {0};
 Cartridge cart;
 FILE *logFile;
 
-/* We will use this renderer to draw into this window every frame. */
 static SDL_Window *window = NULL;
 static SDL_Window *tileWindow = NULL;
 static SDL_Renderer *renderer = NULL;
+static SDL_Renderer *tileRenderer = NULL;
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
     SDL_SetAppMetadata("Example Renderer Clear", "1.0",
@@ -34,12 +35,19 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         SDL_Log("Couldn't create window/renderer: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
+    if (!SDL_CreateWindowAndRenderer("Tile Window", 640, 480, 0, &tileWindow,
+                                     &tileRenderer)) {
+        SDL_Log("Couldn't create window/renderer: %s", SDL_GetError());
+        return SDL_APP_FAILURE;
+    }
     SDL_SetRenderLogicalPresentation(renderer, 640, 480,
+                                     SDL_LOGICAL_PRESENTATION_LETTERBOX);
+    SDL_SetRenderLogicalPresentation(tileRenderer, 640, 480,
                                      SDL_LOGICAL_PRESENTATION_LETTERBOX);
 
     logFile = fopen("../logs/log.txt", "w");
 
-    cart = LoadCartridge("../roms/09-op r,r.gb");
+    cart = LoadCartridge("../roms/01-special.gb");
     opcodesJsonParser("../Opcodes.json");
     cpuInit();
 
@@ -57,29 +65,32 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 
 SDL_AppResult SDL_AppIterate(void *appstate) {
     const double targetFrameTime = 1.0 / 60.0;
-    const double safetyMargin = 0.002;        // 2ms margin for rendering overhead
+    const double safetyMargin = 0.002; // 2ms margin for rendering overhead
     const double startTime = ((double)SDL_GetTicks()) / 1000.0;
-    
+
     // Run cpuStep as many times as possible until we hit our time limit
-    while ((((double)SDL_GetTicks()) / 1000.0) - startTime < (targetFrameTime - safetyMargin)) {
+    while ((((double)SDL_GetTicks()) / 1000.0) - startTime <
+           (targetFrameTime - safetyMargin)) {
         cpuStep();
     }
+    SDL_RenderClear(tileRenderer);
 
     const double now = ((double)SDL_GetTicks()) / 1000.0;
     const float red = (float)(0.5 + 0.5 * SDL_sin(now));
     const float green = (float)(0.5 + 0.5 * SDL_sin(now + SDL_PI_D * 2 / 3));
     const float blue = (float)(0.5 + 0.5 * SDL_sin(now + SDL_PI_D * 4 / 3));
 
-    SDL_SetRenderDrawColorFloat(renderer, red, green, blue, SDL_ALPHA_OPAQUE_FLOAT);
-	int w, h;
-	SDL_GetWindowSize(tileWindow, &w, &h);
-	SDL_Surface* tiles = getTileSurfaces(w, h);
-	for (size_t i = 0; i < 0x6000; ++i) {
-			
-	}
+    SDL_SetRenderDrawColorFloat(renderer, red, green, blue,
+                                SDL_ALPHA_OPAQUE_FLOAT);
+    int w, h;
+    SDL_GetWindowSize(tileWindow, &w, &h);
 
     SDL_RenderClear(renderer);
     SDL_RenderPresent(renderer);
+    uint8_t testTile[16] = {0x7C, 0x7C, 0x00, 0xC6, 0xC6, 0x00, 0x00, 0xFE,
+                            0xC6, 0xC6, 0x00, 0xC6, 0xC6, 0x00, 0x00, 0x00};
+    renderTile(tileRenderer, w, h, 10, 10, testTile);
+    SDL_RenderPresent(tileRenderer);
 
     return SDL_APP_CONTINUE;
 }
