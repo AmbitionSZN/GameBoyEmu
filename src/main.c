@@ -89,7 +89,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     SDL_RenderPresent(renderer);
     uint8_t testTile[16] = {0x7C, 0x7C, 0x00, 0xC6, 0xC6, 0x00, 0x00, 0xFE,
                             0xC6, 0xC6, 0x00, 0xC6, 0xC6, 0x00, 0x00, 0x00};
-    renderTile(tileRenderer, w, h, 10, 10, testTile);
+    renderTiles(tileRenderer, w, h);
     SDL_RenderPresent(tileRenderer);
 
     return SDL_APP_CONTINUE;
