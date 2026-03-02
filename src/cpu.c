@@ -726,7 +726,7 @@ void cpuStep() {
         printInstrs(false);
         fetchData();
         execute();
-    //    gbPrint();
+        gbPrint();
         gbDoctorPrint(logFile);
         dbgUpdate();
 

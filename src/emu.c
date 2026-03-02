@@ -4,11 +4,11 @@
 extern Emulator emu;
 
 void emuCycles(int cycles) {
-    //TODO...
-    int n = cycles * 4;
-
-    for (int i=0; i<n; i++) {
-        emu.Ticks++;
-        timerTick();
+    for (int i = 0; i < cycles; i++) {
+        for (int n = 0; n < 4; n++) {
+            emu.Ticks++;
+            timerTick();
+        }
+        DMATick();
     }
 }

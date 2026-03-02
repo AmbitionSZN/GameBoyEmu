@@ -47,7 +47,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     logFile = fopen("../logs/log.txt", "w");
 
-    cart = LoadCartridge("../roms/01-special.gb");
+    cart = LoadCartridge("../roms/Tetris.gb");
     opcodesJsonParser("../Opcodes.json");
     cpuInit();
 
@@ -87,8 +87,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
     SDL_RenderClear(renderer);
     SDL_RenderPresent(renderer);
-    uint8_t testTile[16] = {0x7C, 0x7C, 0x00, 0xC6, 0xC6, 0x00, 0x00, 0xFE,
-                            0xC6, 0xC6, 0x00, 0xC6, 0xC6, 0x00, 0x00, 0x00};
     renderTiles(tileRenderer, w, h);
     SDL_RenderPresent(tileRenderer);
 

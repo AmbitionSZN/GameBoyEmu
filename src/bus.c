@@ -8,6 +8,7 @@
 
 extern uint8_t memory[0x10000];
 extern CPU cpu;
+extern DMA dma;
 
 uint8_t busRead(uint16_t address) {
     if (address < 0x8000) {
@@ -15,7 +16,6 @@ uint8_t busRead(uint16_t address) {
         return cartRead(address);
     } else if (address < 0xA000) {
         // Char/Map Data
-        // TODO
 		return memory[address];
     } else if (address < 0xC000) {
         // Cartridge RAM
@@ -28,9 +28,10 @@ uint8_t busRead(uint16_t address) {
         return 0;
     } else if (address < 0xFEA0) {
         // OAM
-        // printf("UNSUPPORTED bus read(%04X)\n", address);
-        // exit(EXIT_FAILURE);
-        return 0;
+		if (dma.Active) {
+			return 0xFF;
+		}
+        return memory[address];
     } else if (address < 0xFF00) {
         // reserved unusable...
         return 0;
@@ -57,9 +58,7 @@ uint16_t busRead16(uint16_t address) {
 void busWrite(uint16_t address, uint8_t data) {
     if (address < 0x8000) {
         // ROM Data
-		printf("attempt to write to rom\n");
-		printf("address: %X\n", address);
-        exit(0);
+		cartWrite(address, data);
         return;
     } else if (address < 0xA000) {
         // Char/Map Data
@@ -79,12 +78,12 @@ void busWrite(uint16_t address, uint8_t data) {
         exit(EXIT_FAILURE);
     } else if (address < 0xFEA0) {
         // OAM
-        printf("UNSUPPORTED busWrite(%04X)\n", address);
-        exit(EXIT_FAILURE);
+		if (!dma.Active) {
+			memory[address] = data;
+		}
+		return;
     } else if (address < 0xFF00) {
         // unusable reserved
-        printf("UNSUPPORTED busWrite(%04X)\n", address);
-        exit(EXIT_FAILURE);
     } else if (address < 0xFF80) {
         // IO Registers...
         ioWrite(address, data);

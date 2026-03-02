@@ -38,7 +38,7 @@ uint8_t cartRead(uint16_t address) {
 }
 
 void cartWrite(uint16_t address, uint8_t val) {
-	printf("attempt to write to cart\naddress: %X", address);
-	exit(0);
+//	printf("attempt to write to cart\naddress: %X", address);
+//	exit(0);
 	return;
 }
