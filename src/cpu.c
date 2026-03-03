@@ -726,7 +726,7 @@ void cpuStep() {
         printInstrs(false);
         fetchData();
         execute();
-        gbPrint();
+    //    gbPrint();
         gbDoctorPrint(logFile);
         dbgUpdate();
 
@@ -934,6 +934,8 @@ uint16_t op1Read() {
 			return 7;
     case DT_RST0:
         return 0;
+	case DT_RST8:
+			return 0x8;
     case DT_RST10:
         return 0x10;
     case DT_RST18:
@@ -959,8 +961,8 @@ uint16_t op1Read() {
     case DT_A_AF ... DT_A_HLD:
         return busRead(readRegisterU16(instr->Operand1));
     default:
-        printf("OP: %i\n", instr->Operand1);
-        printf("instr: %i\n", instr->Opcode);
+        printf("Operand: %i\n", instr->Operand1);
+        printf("instr: %2.2X\n", instr->Opcode);
         printf("error in op1Read\n");
         exit(EXIT_FAILURE);
     }

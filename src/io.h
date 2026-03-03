@@ -15,3 +15,4 @@ void DMATransfer(uint16_t dest, uint16_t src);
 void DMAStart(uint8_t start);
 void timerTick();
 void DMATick();
+void lcdWrite(uint16_t address, uint8_t value);

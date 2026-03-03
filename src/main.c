@@ -16,6 +16,8 @@ uint8_t memory[0x10000] = {0};
 Cartridge cart;
 FILE *logFile;
 
+extern Ppu ppu;
+
 static SDL_Window *window = NULL;
 static SDL_Window *tileWindow = NULL;
 static SDL_Renderer *renderer = NULL;
@@ -47,7 +49,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     logFile = fopen("../logs/log.txt", "w");
 
-    cart = LoadCartridge("../roms/Tetris.gb");
+    cart = LoadCartridge("../roms/Dr.Mario.gb");
     opcodesJsonParser("../Opcodes.json");
     cpuInit();
 
@@ -64,13 +66,10 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 }
 
 SDL_AppResult SDL_AppIterate(void *appstate) {
-    const double targetFrameTime = 1.0 / 60.0;
-    const double safetyMargin = 0.002; // 2ms margin for rendering overhead
-    const double startTime = ((double)SDL_GetTicks()) / 1000.0;
 
-    // Run cpuStep as many times as possible until we hit our time limit
-    while ((((double)SDL_GetTicks()) / 1000.0) - startTime <
-           (targetFrameTime - safetyMargin)) {
+	static uint32_t prevFrame;
+
+    while  (prevFrame == ppu.CurrentFrame) {
         cpuStep();
     }
     SDL_RenderClear(tileRenderer);
@@ -89,6 +88,8 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     SDL_RenderPresent(renderer);
     renderTiles(tileRenderer, w, h);
     SDL_RenderPresent(tileRenderer);
+
+	prevFrame = ppu.CurrentFrame;
 
     return SDL_APP_CONTINUE;
 }

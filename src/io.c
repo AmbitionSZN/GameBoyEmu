@@ -1,9 +1,9 @@
 #include "io.h"
 #include "bus.h"
 #include "cpu.h"
+#include "ppu.h"
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <unistd.h>
 
 extern uint8_t memory[0x10000];
@@ -11,9 +11,9 @@ extern uint8_t memory[0x10000];
 DMA dma;
 
 static uint16_t div = 0xAC00;
-static uint8_t *tima = &memory[0xFF05];
-static uint8_t *tma = &memory[0xFF06];
-static uint8_t *tac = &memory[0xFF07];
+static uint8_t *const tima = &memory[0xFF05];
+static uint8_t *const tma = &memory[0xFF06];
+static uint8_t *const tac = &memory[0xFF07];
 
 uint8_t ioRead(uint16_t address) {
     switch (address) {
@@ -25,6 +25,7 @@ uint8_t ioRead(uint16_t address) {
         memory[address] += 1;
         return n;
     }
+
     default:
         return memory[address];
     }
@@ -35,6 +36,10 @@ void ioWrite(uint16_t address, uint8_t data) {
     case 0xFF04:
         div = 0;
         break;
+    case 0xFF40 ... 0xFF45:
+    case 0xFF47 ... 0xFF4B:
+        lcdWrite(address, data);
+        return;
     case 0xFF46:
         DMAStart(data);
         break;
@@ -97,11 +102,16 @@ void DMATick() {
     dma.Dest++;
 
     dma.Active = dma.Dest < 0xFEA0;
+}
 
-    /*
-    if (!dma.Active) {
-        printf("DMA DONE!\n");
-        sleep(2);
+void lcdWrite(uint16_t address, uint8_t value) {
+    memory[address] = value;
+
+    if (address == 0xFF47) {
+        updatePalette(value, 0);
+    } else if (address == 0xFF48) {
+        updatePalette(value & 0b11111100, 1);
+    } else if (address == 0xFF49) {
+        updatePalette(value & 0b11111100, 1);
     }
-    */
 }
