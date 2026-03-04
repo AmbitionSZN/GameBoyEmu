@@ -3,6 +3,16 @@
 #include <SDL3/SDL_render.h>
 #include <stdint.h>
 
+typedef struct _PxFifoEntry {
+	uint32_t Color;
+	struct _PxFifoEntry *Next;
+} PxFifoEntry;
+
+typedef struct {
+	PxFifoEntry *Head;
+	PxFifoEntry *Tail;
+	size_t Size;
+} PixelFifo;
 
 typedef struct {
 	uint8_t Y;
@@ -38,4 +48,6 @@ void renderTiles(SDL_Renderer *renderer, int winW, int winH);
 void lcdInit();
 void ppuTick();
 void updatePalette(uint8_t palette_data, uint8_t pal);
+void fifoPush(uint32_t color);
+uint32_t fifoPop();
 

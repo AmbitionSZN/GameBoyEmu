@@ -6,13 +6,17 @@
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_surface.h>
 #include <SDL3/SDL_timer.h>
+#include <assert.h>
+#include <cstdlib>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 extern uint8_t memory[0x10000];
 
 Ppu ppu;
+PixelFifo fifo;
 
 static const uint32_t tileColors[4] = {0xFFFFFFFF, 0xFFAAAAAA, 0xFF555555,
                                        0xFF000000};
@@ -106,24 +110,6 @@ void lcdInit() {
 }
 
 void incrementLy() {
-    /*
-    #define LCDC_BGW_ENABLE (BIT(lcd_get_context()->lcdc, 0))
-    #define LCDC_OBJ_ENABLE (BIT(lcd_get_context()->lcdc, 1))
-    #define LCDC_OBJ_HEIGHT (BIT(lcd_get_context()->lcdc, 2) ? 16 : 8)
-    #define LCDC_BG_MAP_AREA (BIT(lcd_get_context()->lcdc, 3) ? 0x9C00 : 0x9800)
-    #define LCDC_BGW_DATA_AREA (BIT(lcd_get_context()->lcdc, 4) ? 0x8000 :
-    0x8800) #define LCDC_WIN_ENABLE (BIT(lcd_get_context()->lcdc, 5)) #define
-    LCDC_WIN_MAP_AREA (BIT(lcd_get_context()->lcdc, 6) ? 0x9C00 : 0x9800)
-    #define LCDC_LCD_ENABLE (BIT(lcd_get_context()->lcdc, 7))
-
-    #define LCDS_MODE ((lcd_mode)(lcd_get_context()->lcds & 0b11))
-    #define LCDS_MODE_SET(mode) { lcd_get_context()->lcds &= ~0b11;
-    lcd_get_context()->lcds |= mode; }
-
-    #define LCDS_LYC (BIT(lcd_get_context()->lcds, 2))
-    #define LCDS_LYC_SET(b) (BIT_SET(lcd_get_context()->lcds, 2, b))
-#define LCDS_STAT_INT(src) (lcd_get_context()->lcds & src)
-    */
     *ly += 1;
 
     if (*ly == *lyc) {
@@ -176,12 +162,12 @@ void ppuTick() {
 
                 ppu.CurrentFrame++;
 
-                static uint32_t targetFrameTime = 1000 / 60;
-                static long prevFrameTime = 0;
-                static long startTimer = 0;
-                static long frameCount = 0;
-                uint32_t end = SDL_GetTicks();
-                uint32_t frameTime = end - prevFrameTime;
+                static const size_t targetFrameTime = 1000 / 60;
+                static size_t prevFrameTime = 0;
+                static size_t startTimer = 0;
+                static size_t frameCount = 0;
+                size_t end = SDL_GetTicks();
+                size_t frameTime = end - prevFrameTime;
 
                 if (frameTime < targetFrameTime) {
                     SDL_Delay((targetFrameTime - frameTime));
@@ -222,4 +208,33 @@ void updatePalette(uint8_t palette_data, uint8_t pal) {
     pColors[1] = colorsDefault[(palette_data >> 2) & 0b11];
     pColors[2] = colorsDefault[(palette_data >> 4) & 0b11];
     pColors[3] = colorsDefault[(palette_data >> 6) & 0b11];
+}
+
+void fifoPush(uint32_t color) {
+    PxFifoEntry *entry = malloc(sizeof(PxFifoEntry));
+    entry->Color = color;
+    entry->Next = NULL;
+    if (fifo.Size == 0) {
+        fifo.Head = entry;
+    } else {
+        fifo.Tail->Next = entry;
+    }
+	fifo.Tail = entry;
+    fifo.Size++;
+}
+
+uint32_t fifoPop() {
+    assert(fifo.Size);
+
+    uint32_t color = fifo.Head->Color;
+    PxFifoEntry *next = fifo.Head->Next;
+    free(fifo.Head);
+
+    if (fifo.Size == 1) {
+        fifo.Tail = NULL;
+    }
+
+    fifo.Head = next;
+    fifo.Size--;
+	return color;
 }
