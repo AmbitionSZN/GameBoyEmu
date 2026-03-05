@@ -11,10 +11,14 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 extern uint8_t memory[0x10000];
 
 Ppu ppu;
+static const size_t yRes = 144;
+static const size_t xRes = 160;
+static uint32_t videoBuffer[144 * 160];
 PixelFifo fifo;
 PixelFetcher pxFetcher;
 
@@ -24,8 +28,6 @@ static const size_t tilesPerColumn = 16;
 static const size_t tilesPerRow = 24;
 static const size_t linesPerFrame = 154;
 static const size_t ticksPerLine = 456;
-static const size_t yRes = 144;
-static const size_t xRes = 160;
 
 static uint8_t *const lcdc = &memory[0xFF40];
 static uint8_t *const lcds = &memory[0xFF41];
@@ -50,6 +52,7 @@ void lcdsModeSet(LcdMode mode) {
 void ppuInit() {
     ppu.CurrentFrame = 0;
     ppu.LineTicks = 0;
+
     lcdInit();
     lcdsModeSet(MODE_OAM);
     pxFetcher.State = FS_GET_TILE;
@@ -348,9 +351,9 @@ void pushPixel() {
         uint32_t pixelData = fifoPop();
 
         if (pxFetcher.LineX >= (*scrollX % 8)) {
-            memory[(uint16_t)pxFetcher.PushedX + (*ly * xRes) + 0x8000] =
-                pixelData;
-
+			uint64_t val = pxFetcher.PushedX + (*ly * xRes);
+			printf("%lu\n", val);
+			videoBuffer[pxFetcher.PushedX + (*ly * xRes)] = pixelData;
             pxFetcher.PushedX++;
         }
 
@@ -361,7 +364,7 @@ void pushPixel() {
 void pixelProcess() {
     pxFetcher.MapY = *ly + *scrollY;
     pxFetcher.MapX = pxFetcher.FetchX + *scrollX;
-    pxFetcher.TileY = *ly + (*scrollY % 8) * 2;
+    pxFetcher.TileY = ((*ly + *scrollY) % 8) * 2;
 
     if (!(ppu.LineTicks & 1)) {
         pixelFetch();

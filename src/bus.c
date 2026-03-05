@@ -74,8 +74,6 @@ void busWrite(uint16_t address, uint8_t data) {
         return;
     } else if (address < 0xFE00) {
         // reserved echo ram
-        printf("UNSUPPORTED busWrite(%04X)\n", address);
-        exit(EXIT_FAILURE);
     } else if (address < 0xFEA0) {
         // OAM
 		if (!dma.Active) {

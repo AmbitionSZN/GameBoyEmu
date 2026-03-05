@@ -49,7 +49,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     logFile = fopen("../logs/log.txt", "w");
 
-    cart = LoadCartridge("../roms/01-special.gb");
+    cart = LoadCartridge("../roms/Dr.Mario.gb");
     opcodesJsonParser("../Opcodes.json");
     cpuInit();
 

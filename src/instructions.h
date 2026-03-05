@@ -49,3 +49,4 @@ void RES();
 void SET();
 void RST();
 void DAA();
+void STOP();

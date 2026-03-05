@@ -661,7 +661,9 @@ void execute() {
     case MNEM_DAA:
         DAA();
         break;
-
+	case MNEM_STOP:
+		STOP();
+		break;
     default:
         printf("Instruction not implemented:\n");
         printf("\tOpcode: %2.2X\n", cpu.CurInstr->Opcode);

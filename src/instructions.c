@@ -224,7 +224,7 @@ void INC() {
     CPURegisters *regs = &cpu.Regs;
     if (is16BitReg(cpu.CurInstr->Operand1)) {
         uint16_t data = readRegisterU16(cpu.CurInstr->Operand1);
-		data += 1;
+        data += 1;
         writeRegisterU16(cpu.CurInstr->Operand1, data);
     } else {
         uint8_t val = op1Read();
@@ -684,3 +684,5 @@ void DAA() {
     }
     regs->F &= ~FLAG_H;
 }
+
+void STOP() {}

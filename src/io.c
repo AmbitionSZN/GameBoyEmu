@@ -20,10 +20,7 @@ uint8_t ioRead(uint16_t address) {
     case 0xFF04:
         return (div >> 8);
     case 0xFF44: {
-        //  return 0x90;
-        uint8_t n = memory[address];
-        memory[address] += 1;
-        return n;
+        return memory[address];
     }
 
     default:
