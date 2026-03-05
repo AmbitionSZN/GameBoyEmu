@@ -49,7 +49,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     logFile = fopen("../logs/log.txt", "w");
 
-    cart = LoadCartridge("../roms/Dr.Mario.gb");
+    cart = LoadCartridge("../roms/01-special.gb");
     opcodesJsonParser("../Opcodes.json");
     cpuInit();
 
@@ -67,7 +67,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 
 SDL_AppResult SDL_AppIterate(void *appstate) {
 
-	static uint32_t prevFrame;
+	static uint32_t prevFrame = 0;
 
     while  (prevFrame == ppu.CurrentFrame) {
         cpuStep();

@@ -1,13 +1,12 @@
 #include "ppu.h"
+#include "bus.h"
 #include "cpu.h"
-#include "io.h"
 #include <SDL3/SDL_pixels.h>
 #include <SDL3/SDL_rect.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_surface.h>
 #include <SDL3/SDL_timer.h>
 #include <assert.h>
-#include <cstdlib>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -17,6 +16,7 @@ extern uint8_t memory[0x10000];
 
 Ppu ppu;
 PixelFifo fifo;
+PixelFetcher pxFetcher;
 
 static const uint32_t tileColors[4] = {0xFFFFFFFF, 0xFFAAAAAA, 0xFF555555,
                                        0xFF000000};
@@ -29,6 +29,8 @@ static const size_t xRes = 160;
 
 static uint8_t *const lcdc = &memory[0xFF40];
 static uint8_t *const lcds = &memory[0xFF41];
+static uint8_t *const scrollY = &memory[0xFF42];
+static uint8_t *const scrollX = &memory[0xFF43];
 static uint8_t *const ly = &memory[0xFF44];
 static uint8_t *const lyc = &memory[0xFF45];
 static uint8_t *const bgPalette = &memory[0xFF47];
@@ -50,6 +52,11 @@ void ppuInit() {
     ppu.LineTicks = 0;
     lcdInit();
     lcdsModeSet(MODE_OAM);
+    pxFetcher.State = FS_GET_TILE;
+    pxFetcher.LineX = 0;
+    pxFetcher.PushedX = 0;
+    pxFetcher.FetchX = 0;
+    fifo.Size = 0;
 }
 
 void renderTile(SDL_Renderer *renderer, int winW, int winH, int x, int y,
@@ -131,11 +138,21 @@ void ppuTick() {
     case MODE_OAM:
         if (ppu.LineTicks >= 80) {
             lcdsModeSet(MODE_XFER);
+            pxFetcher.State = FS_GET_TILE;
+            pxFetcher.LineX = 0;
+            pxFetcher.FetchX = 0;
+            pxFetcher.PushedX = 0;
+            pxFetcher.FifoX = 0;
         }
         break;
     case MODE_XFER:
-        if (ppu.LineTicks >= 80 + 172) {
+        pixelProcess();
+        if (pxFetcher.PushedX >= xRes) {
+			fifoReset();
             lcdsModeSet(MODE_HBLANK);
+			if (*lcds & SS_HBLANK) {
+				requestInterrupt(INT_LCD);
+				}
         }
         break;
     case MODE_VBLANK:
@@ -219,7 +236,7 @@ void fifoPush(uint32_t color) {
     } else {
         fifo.Tail->Next = entry;
     }
-	fifo.Tail = entry;
+    fifo.Tail = entry;
     fifo.Size++;
 }
 
@@ -236,5 +253,119 @@ uint32_t fifoPop() {
 
     fifo.Head = next;
     fifo.Size--;
-	return color;
+    return color;
 }
+
+void fifoReset() {
+    while (fifo.Size) {
+        fifoPop();
+    }
+
+    fifo.Head = NULL;
+}
+
+void pixelFetch() {
+    /*
+#define LCDC_BGW_ENABLE (BIT(lcd_get_context()->lcdc, 0))
+#define LCDC_OBJ_ENABLE (BIT(lcd_get_context()->lcdc, 1))
+#define LCDC_OBJ_HEIGHT (BIT(lcd_get_context()->lcdc, 2) ? 16 : 8)
+#define LCDC_BG_MAP_AREA (BIT(lcd_get_context()->lcdc, 3) ? 0x9C00 : 0x9800)
+#define LCDC_BGW_DATA_AREA (BIT(lcd_get_context()->lcdc, 4) ? 0x8000 : 0x8800)
+#define LCDC_WIN_ENABLE (BIT(lcd_get_context()->lcdc, 5))
+#define LCDC_WIN_MAP_AREA (BIT(lcd_get_context()->lcdc, 6) ? 0x9C00 : 0x9800)
+#define LCDC_LCD_ENABLE (BIT(lcd_get_context()->lcdc, 7))
+
+#define LCDS_MODE ((lcd_mode)(lcd_get_context()->lcds & 0b11))
+#define LCDS_MODE_SET(mode) { lcd_get_context()->lcds &= ~0b11;
+lcd_get_context()->lcds |= mode; }
+
+#define LCDS_LYC (BIT(lcd_get_context()->lcds, 2))
+#define LCDS_LYC_SET(b) (BIT_SET(lcd_get_context()->lcds, 2, b))
+
+    */
+    switch (pxFetcher.State) {
+    case FS_GET_TILE:
+        if (*lcdc & LCDC_BGW_ENABLE) {
+            uint8_t *tileMap =
+                &memory[(*lcdc & LCDC_BG_TILE_MAP) ? 0x9C00 : 0x9800];
+            pxFetcher.BgWFetchData[0] =
+                tileMap[(pxFetcher.MapX / 8) + ((pxFetcher.MapY / 8) * 32)];
+            if (!(*lcdc & LCDC_BGW_TILE_DATA)) {
+                pxFetcher.BgWFetchData[0] += 128;
+            }
+        }
+        pxFetcher.State = FS_DATA_LOW;
+        pxFetcher.FetchX += 8;
+        break;
+    case FS_DATA_LOW: {
+        uint8_t *dataArea =
+            &memory[(*lcdc & LCDC_BGW_TILE_DATA) ? 0x8000 : 0x8800];
+        pxFetcher.BgWFetchData[1] =
+            dataArea[(pxFetcher.BgWFetchData[0] * 16) + pxFetcher.TileY];
+
+        pxFetcher.State = FS_DATA_HIGH;
+        break;
+    }
+    case FS_DATA_HIGH: {
+        uint8_t *dataArea =
+            &memory[(*lcdc & LCDC_BGW_TILE_DATA) ? 0x8000 : 0x8800];
+        pxFetcher.BgWFetchData[2] =
+            dataArea[(pxFetcher.BgWFetchData[0] * 16) + pxFetcher.TileY + 1];
+
+        pxFetcher.State = FS_SLEEP;
+        break;
+    }
+    case FS_SLEEP:
+        pxFetcher.State = FS_PUSH;
+        break;
+    case FS_PUSH:
+
+        if (fifo.Size > 8) {
+            // fifo is full!
+            break;
+        }
+
+        int x = pxFetcher.FetchX - (8 - (*scrollX % 8));
+
+        for (int i = 0; i < 8; i++) {
+            int bit = 7 - i;
+            uint8_t hi = !!(pxFetcher.BgWFetchData[1] & (1 << bit));
+            uint8_t lo = !!(pxFetcher.BgWFetchData[2] & (1 << bit)) << 1;
+            uint32_t color = bgColors[hi | lo];
+
+            if (x >= 0) {
+                fifoPush(color);
+                pxFetcher.FifoX++;
+            }
+        }
+
+        pxFetcher.State = FS_GET_TILE;
+    }
+}
+
+void pushPixel() {
+    if (fifo.Size > 8) {
+        uint32_t pixelData = fifoPop();
+
+        if (pxFetcher.LineX >= (*scrollX % 8)) {
+            memory[(uint16_t)pxFetcher.PushedX + (*ly * xRes) + 0x8000] =
+                pixelData;
+
+            pxFetcher.PushedX++;
+        }
+
+        pxFetcher.LineX++;
+    }
+}
+
+void pixelProcess() {
+    pxFetcher.MapY = *ly + *scrollY;
+    pxFetcher.MapX = pxFetcher.FetchX + *scrollX;
+    pxFetcher.TileY = *ly + (*scrollY % 8) * 2;
+
+    if (!(ppu.LineTicks & 1)) {
+        pixelFetch();
+    }
+	pushPixel();
+}
+
