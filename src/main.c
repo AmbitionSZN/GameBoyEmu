@@ -67,29 +67,25 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 
 SDL_AppResult SDL_AppIterate(void *appstate) {
 
-	static uint32_t prevFrame = 0;
+    static uint32_t prevFrame = 0;
 
-    while  (prevFrame == ppu.CurrentFrame) {
+    while (prevFrame == ppu.CurrentFrame) {
         cpuStep();
     }
     SDL_RenderClear(tileRenderer);
-
-    const double now = ((double)SDL_GetTicks()) / 1000.0;
-    const float red = (float)(0.5 + 0.5 * SDL_sin(now));
-    const float green = (float)(0.5 + 0.5 * SDL_sin(now + SDL_PI_D * 2 / 3));
-    const float blue = (float)(0.5 + 0.5 * SDL_sin(now + SDL_PI_D * 4 / 3));
-
-    SDL_SetRenderDrawColorFloat(renderer, red, green, blue,
-                                SDL_ALPHA_OPAQUE_FLOAT);
-    int w, h;
-    SDL_GetWindowSize(tileWindow, &w, &h);
-
     SDL_RenderClear(renderer);
+
+    int w, h;
+	int w2, h2;
+    SDL_GetWindowSize(tileWindow, &w, &h);
+    SDL_GetWindowSize(window, &w2, &h2);
+    render(renderer);
+
     SDL_RenderPresent(renderer);
     renderTiles(tileRenderer, w, h);
     SDL_RenderPresent(tileRenderer);
 
-	prevFrame = ppu.CurrentFrame;
+    prevFrame = ppu.CurrentFrame;
 
     return SDL_APP_CONTINUE;
 }

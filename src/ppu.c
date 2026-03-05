@@ -89,7 +89,6 @@ void renderTile(SDL_Renderer *renderer, int winW, int winH, int x, int y,
 }
 
 void renderTiles(SDL_Renderer *renderer, int winW, int winH) {
-    // An array of tiles stored as pixels, 64 pixels per tile
     size_t curTile = 0;
     size_t tileWidth = winW / tilesPerRow;
     size_t tileHeight = winH / tilesPerColumn;
@@ -103,6 +102,29 @@ void renderTiles(SDL_Renderer *renderer, int winW, int winH) {
         uint8_t *tile = &memory[i];
         renderTile(renderer, winW, winH, x, y, tile);
         i += 16;
+    }
+}
+
+void render(SDL_Renderer *renderer) {
+    SDL_FRect rc;
+    rc.x = rc.y = 0;
+    rc.w = rc.h = 2048;
+    int scale = 4;
+
+    for (int lineNum = 0; lineNum < yRes; lineNum++) {
+        for (int x = 0; x < xRes; x++) {
+            rc.x = x * scale;
+            rc.y = lineNum * scale;
+            rc.w = scale;
+            rc.h = scale;
+            uint32_t color = videoBuffer[x + (lineNum * xRes)];
+            uint8_t r = (color & (0xFF << 4)) >> 4;
+            uint8_t g = (color & (0xFF << 2)) >> 2;
+            uint8_t b = (color & 0xFF);
+
+            SDL_SetRenderDrawColor(renderer, r, g, b, SDL_ALPHA_OPAQUE);
+            SDL_RenderFillRect(renderer, &rc);
+        }
     }
 }
 
@@ -151,11 +173,11 @@ void ppuTick() {
     case MODE_XFER:
         pixelProcess();
         if (pxFetcher.PushedX >= xRes) {
-			fifoReset();
+            fifoReset();
             lcdsModeSet(MODE_HBLANK);
-			if (*lcds & SS_HBLANK) {
-				requestInterrupt(INT_LCD);
-				}
+            if (*lcds & SS_HBLANK) {
+                requestInterrupt(INT_LCD);
+            }
         }
         break;
     case MODE_VBLANK:
@@ -351,9 +373,7 @@ void pushPixel() {
         uint32_t pixelData = fifoPop();
 
         if (pxFetcher.LineX >= (*scrollX % 8)) {
-			uint64_t val = pxFetcher.PushedX + (*ly * xRes);
-			printf("%lu\n", val);
-			videoBuffer[pxFetcher.PushedX + (*ly * xRes)] = pixelData;
+            videoBuffer[pxFetcher.PushedX + (*ly * xRes)] = pixelData;
             pxFetcher.PushedX++;
         }
 
@@ -369,6 +389,5 @@ void pixelProcess() {
     if (!(ppu.LineTicks & 1)) {
         pixelFetch();
     }
-	pushPixel();
+    pushPixel();
 }
-
