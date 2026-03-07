@@ -49,7 +49,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     logFile = fopen("../logs/log.txt", "w");
 
-    cart = LoadCartridge("../roms/Dr.Mario.gb");
+    cart = LoadCartridge("../roms/dmg-acid2.gb");
     opcodesJsonParser("../Opcodes.json");
     cpuInit();
 
@@ -66,7 +66,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 }
 
 SDL_AppResult SDL_AppIterate(void *appstate) {
-
     static uint32_t prevFrame = 0;
 
     while (prevFrame == ppu.CurrentFrame) {
@@ -76,16 +75,14 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     SDL_RenderClear(renderer);
 
     int w, h;
-	int w2, h2;
     SDL_GetWindowSize(tileWindow, &w, &h);
-    SDL_GetWindowSize(window, &w2, &h2);
     render(renderer);
+    renderTiles(tileRenderer, w, h);
 
     SDL_RenderPresent(renderer);
-    renderTiles(tileRenderer, w, h);
     SDL_RenderPresent(tileRenderer);
 
-    prevFrame = ppu.CurrentFrame;
+    ppu.CurrentFrame = prevFrame;
 
     return SDL_APP_CONTINUE;
 }

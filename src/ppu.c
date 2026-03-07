@@ -52,6 +52,8 @@ void lcdsModeSet(LcdMode mode) {
 void ppuInit() {
     ppu.CurrentFrame = 0;
     ppu.LineTicks = 0;
+    ppu.LineSprites = 0;
+    ppu.FetchedEntryCount = 0;
 
     lcdInit();
     lcdsModeSet(MODE_OAM);
@@ -60,6 +62,157 @@ void ppuInit() {
     pxFetcher.PushedX = 0;
     pxFetcher.FetchX = 0;
     fifo.Size = 0;
+}
+
+void loadLineSprites() {
+    int curY = *ly;
+
+    uint8_t spriteSize = (*lcdc & LCDC_OBJ_SIZE) ? 16 : 8;
+    memset(ppu.LineEntryArray, 0, sizeof(ppu.LineEntryArray));
+
+    for (size_t i = 0; i < 40; i++) {
+        ObjAttribute obj;
+        memcpy(&obj, &memory[0xFE00 + (i * sizeof(ObjAttribute))],
+               sizeof(ObjAttribute));
+
+        if (!obj.X) {
+            // x = 0 means not visible...
+            continue;
+        }
+
+        if (ppu.LineSpriteCount >= 10) {
+            // max 10 sprites per line...
+            break;
+        }
+
+        if (obj.Y <= curY + 16 && obj.Y + spriteSize > curY + 16) {
+            // this sprite is on the current line.
+
+            OamLineEntry *entry = &ppu.LineEntryArray[ppu.LineSpriteCount++];
+
+            entry->Obj = obj;
+            entry->Next = NULL;
+
+            if (!ppu.LineSprites || ppu.LineSprites->Obj.X > obj.X) {
+                entry->Next = ppu.LineSprites;
+                ppu.LineSprites = entry;
+                continue;
+            }
+
+            // do some sorting...
+
+            OamLineEntry *le = ppu.LineSprites;
+            OamLineEntry *prev = le;
+
+            while (le) {
+                if (le->Obj.X > obj.X) {
+                    prev->Next = entry;
+                    entry->Next = le;
+                    break;
+                }
+
+                if (!le->Next) {
+                    le->Next = entry;
+                    break;
+                }
+
+                prev = le;
+                le = le->Next;
+            }
+        }
+    }
+}
+
+uint32_t fetchSpritePixels(int bit, uint32_t color, uint8_t bgColor) {
+    for (uint8_t i = 0; i < ppu.FetchedEntryCount; i++) {
+        int spriteX = (ppu.FetchedEntries[i].X - 8) + ((*scrollX % 8));
+
+        if (spriteX + 8 < pxFetcher.FifoX) {
+            // past pixel point already...
+            continue;
+        }
+
+        int offset = pxFetcher.FifoX - spriteX;
+
+        if (offset < 0 || offset > 7) {
+            // out of bounds..
+            continue;
+        }
+
+        bit = (7 - offset);
+
+        if (ppu.FetchedEntries[i].Attributes & (1 << 5)) {
+            bit = offset;
+        }
+
+        uint8_t lo = !!(pxFetcher.FetchEntryData[i * 2] & (1 << bit));
+        uint8_t hi = !!(pxFetcher.FetchEntryData[(i * 2) + 1] & (1 << bit))
+                     << 1;
+
+        bool bgPriority = ppu.FetchedEntries[i].Attributes & (1 << 7);
+
+        if (!(hi | lo)) {
+            // transparent
+            continue;
+        }
+
+        if (!bgPriority || bgColor == 0) {
+            color = (ppu.FetchedEntries[i].Attributes & (1 << 4))
+                        ? sp2Colors[hi | lo]
+                        : sp1Colors[hi | lo];
+
+            if (hi | lo) {
+                break;
+            }
+        }
+    }
+
+    return color;
+}
+
+void loadSpriteTile() {
+    OamLineEntry *le = ppu.LineSprites;
+
+    while (le) {
+        int spriteX = (le->Obj.X - 8) + (*scrollX % 8);
+
+        if ((spriteX >= pxFetcher.FetchX && spriteX < pxFetcher.FetchX + 8) ||
+            ((spriteX + 8) >= pxFetcher.FetchX &&
+             (spriteX + 8) < pxFetcher.FetchX + 8)) {
+            // need to add entry
+            ppu.FetchedEntries[ppu.FetchedEntryCount++] = le->Obj;
+        }
+
+        le = le->Next;
+
+        if (!le || ppu.FetchedEntryCount >= 3) {
+            // max checking 3 sprites on pixels
+            break;
+        }
+    }
+}
+
+void loadSpriteData(int offset) {
+    int curY = *ly;
+    uint8_t spriteSize = (*lcdc & LCDC_OBJ_SIZE) ? 16 : 8;
+
+    for (int i = 0; i < ppu.FetchedEntryCount; i++) {
+        uint8_t tileY = ((curY + 16) - ppu.FetchedEntries[i].Y) * 2;
+
+        if (ppu.FetchedEntries[i].Attributes & (1 << 6)) {
+            // flipped upside down...
+            tileY = ((spriteSize * 2) - 2) - tileY;
+        }
+
+        uint8_t tileIndex = ppu.FetchedEntries->TileIdx;
+
+        if (spriteSize == 16) {
+            tileIndex &= ~1;
+        }
+
+        pxFetcher.FetchEntryData[(i * 2) + offset] =
+            busRead(0x8000 + (tileIndex * 16) + tileY + offset);
+    }
 }
 
 void renderTile(SDL_Renderer *renderer, int winW, int winH, int x, int y,
@@ -111,8 +264,8 @@ void render(SDL_Renderer *renderer) {
     rc.w = rc.h = 2048;
     int scale = 4;
 
-    for (int lineNum = 0; lineNum < yRes; lineNum++) {
-        for (int x = 0; x < xRes; x++) {
+    for (size_t lineNum = 0; lineNum < yRes; lineNum++) {
+        for (size_t x = 0; x < xRes; x++) {
             rc.x = x * scale;
             rc.y = lineNum * scale;
             rc.w = scale;
@@ -168,6 +321,12 @@ void ppuTick() {
             pxFetcher.FetchX = 0;
             pxFetcher.PushedX = 0;
             pxFetcher.FifoX = 0;
+
+            if (ppu.LineTicks == 1) {
+                ppu.LineSprites = 0;
+                ppu.LineSpriteCount = 0;
+                loadLineSprites();
+            }
         }
         break;
     case MODE_XFER:
@@ -234,7 +393,7 @@ void ppuTick() {
     }
 }
 
-void updatePalette(uint8_t palette_data, uint8_t pal) {
+void updatePalette(uint8_t paletteData, uint8_t pal) {
     uint32_t *pColors = bgColors;
 
     switch (pal) {
@@ -246,10 +405,10 @@ void updatePalette(uint8_t palette_data, uint8_t pal) {
         break;
     }
 
-    pColors[0] = colorsDefault[palette_data & 0b11];
-    pColors[1] = colorsDefault[(palette_data >> 2) & 0b11];
-    pColors[2] = colorsDefault[(palette_data >> 4) & 0b11];
-    pColors[3] = colorsDefault[(palette_data >> 6) & 0b11];
+    pColors[0] = colorsDefault[paletteData & 0b11];
+    pColors[1] = colorsDefault[(paletteData >> 2) & 0b11];
+    pColors[2] = colorsDefault[(paletteData >> 4) & 0b11];
+    pColors[3] = colorsDefault[(paletteData >> 6) & 0b11];
 }
 
 void fifoPush(uint32_t color) {
@@ -310,14 +469,19 @@ lcd_get_context()->lcds |= mode; }
     */
     switch (pxFetcher.State) {
     case FS_GET_TILE:
+        ppu.FetchedEntryCount = 0;
         if (*lcdc & LCDC_BGW_ENABLE) {
             uint8_t *tileMap =
                 &memory[(*lcdc & LCDC_BG_TILE_MAP) ? 0x9C00 : 0x9800];
             pxFetcher.BgWFetchData[0] =
                 tileMap[(pxFetcher.MapX / 8) + ((pxFetcher.MapY / 8) * 32)];
-            if (!(*lcdc & LCDC_BGW_TILE_DATA)) {
+
+            if (((*lcdc & LCDC_BGW_TILE_DATA) ? 0x8000 : 0x8800) == 0x8800) {
                 pxFetcher.BgWFetchData[0] += 128;
             }
+        }
+        if ((*lcdc & LCDC_OBJ_ENABLE) && ppu.LineSprites) {
+            loadSpriteTile();
         }
         pxFetcher.State = FS_DATA_LOW;
         pxFetcher.FetchX += 8;
@@ -327,7 +491,7 @@ lcd_get_context()->lcds |= mode; }
             &memory[(*lcdc & LCDC_BGW_TILE_DATA) ? 0x8000 : 0x8800];
         pxFetcher.BgWFetchData[1] =
             dataArea[(pxFetcher.BgWFetchData[0] * 16) + pxFetcher.TileY];
-
+        loadSpriteData(0);
         pxFetcher.State = FS_DATA_HIGH;
         break;
     }
@@ -336,7 +500,7 @@ lcd_get_context()->lcds |= mode; }
             &memory[(*lcdc & LCDC_BGW_TILE_DATA) ? 0x8000 : 0x8800];
         pxFetcher.BgWFetchData[2] =
             dataArea[(pxFetcher.BgWFetchData[0] * 16) + pxFetcher.TileY + 1];
-
+        loadSpriteData(1);
         pxFetcher.State = FS_SLEEP;
         break;
     }
@@ -354,9 +518,17 @@ lcd_get_context()->lcds |= mode; }
 
         for (int i = 0; i < 8; i++) {
             int bit = 7 - i;
-            uint8_t hi = !!(pxFetcher.BgWFetchData[1] & (1 << bit));
-            uint8_t lo = !!(pxFetcher.BgWFetchData[2] & (1 << bit)) << 1;
+            uint8_t lo = !!(pxFetcher.BgWFetchData[1] & (1 << bit));
+            uint8_t hi = !!(pxFetcher.BgWFetchData[2] & (1 << bit)) << 1;
             uint32_t color = bgColors[hi | lo];
+
+            if (!(*lcdc & LCDC_BGW_ENABLE)) {
+                color = bgColors[0];
+            }
+
+            if (*lcdc & LCDC_OBJ_ENABLE) {
+                color = fetchSpritePixels(bit, color, hi | lo);
+            }
 
             if (x >= 0) {
                 fifoPush(color);
@@ -365,6 +537,7 @@ lcd_get_context()->lcds |= mode; }
         }
 
         pxFetcher.State = FS_GET_TILE;
+        break;
     }
 }
 

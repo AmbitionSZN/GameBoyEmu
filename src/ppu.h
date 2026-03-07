@@ -40,12 +40,21 @@ typedef struct {
     uint8_t X;
     uint8_t TileIdx;
     uint8_t Attributes;
-
 } ObjAttribute;
+
+typedef struct _OamLineEntry {
+	ObjAttribute Obj;
+	struct _OamLineEntry *Next;
+} OamLineEntry;
 
 typedef struct {
     uint32_t CurrentFrame;
     uint32_t LineTicks;
+	OamLineEntry *LineSprites;
+	OamLineEntry LineEntryArray[10];
+	ObjAttribute FetchedEntries[3];
+	uint8_t LineSpriteCount;
+	uint8_t FetchedEntryCount; 
 } Ppu;
 
 typedef enum { MODE_HBLANK, MODE_VBLANK, MODE_OAM, MODE_XFER } LcdMode;

@@ -732,7 +732,7 @@ void cpuStep() {
         gbDoctorPrint(logFile);
         dbgUpdate();
 
-             dbgPrint();
+     //        dbgPrint();
 
     } else {
         emuCycles(1);

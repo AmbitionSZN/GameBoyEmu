@@ -19,10 +19,8 @@ uint8_t ioRead(uint16_t address) {
     switch (address) {
     case 0xFF04:
         return (div >> 8);
-    case 0xFF44: {
+    case 0xFF44:
         return memory[address];
-    }
-
     default:
         return memory[address];
     }
@@ -109,6 +107,6 @@ void lcdWrite(uint16_t address, uint8_t value) {
     } else if (address == 0xFF48) {
         updatePalette(value & 0b11111100, 1);
     } else if (address == 0xFF49) {
-        updatePalette(value & 0b11111100, 1);
+        updatePalette(value & 0b11111100, 2);
     }
 }
