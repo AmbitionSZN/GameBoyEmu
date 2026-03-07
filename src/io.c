@@ -34,7 +34,7 @@ void ioWrite(uint16_t address, uint8_t data) {
     case 0xFF40 ... 0xFF45:
     case 0xFF47 ... 0xFF4B:
         lcdWrite(address, data);
-        return;
+        break;
     case 0xFF46:
         DMAStart(data);
         break;

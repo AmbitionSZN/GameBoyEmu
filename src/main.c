@@ -32,7 +32,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         return SDL_APP_FAILURE;
     }
 
-    if (!SDL_CreateWindowAndRenderer("examples/renderer/clear", 640, 480, 0,
+    if (!SDL_CreateWindowAndRenderer("examples/renderer/clear", 1024, 768, !(SDL_WINDOW_RESIZABLE),
                                      &window, &renderer)) {
         SDL_Log("Couldn't create window/renderer: %s", SDL_GetError());
         return SDL_APP_FAILURE;
@@ -49,7 +49,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     logFile = fopen("../logs/log.txt", "w");
 
-    cart = LoadCartridge("../roms/dmg-acid2.gb");
+    cart = LoadCartridge("../roms/Dr.Mario.gb");
     opcodesJsonParser("../Opcodes.json");
     cpuInit();
 
@@ -76,6 +76,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
     int w, h;
     SDL_GetWindowSize(tileWindow, &w, &h);
+
     render(renderer);
     renderTiles(tileRenderer, w, h);
 

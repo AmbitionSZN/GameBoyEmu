@@ -18,7 +18,7 @@ extern uint8_t memory[0x10000];
 Ppu ppu;
 static const size_t yRes = 144;
 static const size_t xRes = 160;
-static uint32_t videoBuffer[144 * 160];
+static uint32_t videoBuffer[144 * 160] = {0};
 PixelFifo fifo;
 PixelFetcher pxFetcher;
 
@@ -55,13 +55,13 @@ void ppuInit() {
     ppu.LineSprites = 0;
     ppu.FetchedEntryCount = 0;
 
-    lcdInit();
-    lcdsModeSet(MODE_OAM);
     pxFetcher.State = FS_GET_TILE;
     pxFetcher.LineX = 0;
     pxFetcher.PushedX = 0;
     pxFetcher.FetchX = 0;
     fifo.Size = 0;
+    lcdInit();
+    lcdsModeSet(MODE_OAM);
 }
 
 void loadLineSprites() {
@@ -204,7 +204,7 @@ void loadSpriteData(int offset) {
             tileY = ((spriteSize * 2) - 2) - tileY;
         }
 
-        uint8_t tileIndex = ppu.FetchedEntries->TileIdx;
+        uint8_t tileIndex = ppu.FetchedEntries[i].TileIdx;
 
         if (spriteSize == 16) {
             tileIndex &= ~1;
@@ -258,22 +258,25 @@ void renderTiles(SDL_Renderer *renderer, int winW, int winH) {
     }
 }
 
+
+
 void render(SDL_Renderer *renderer) {
     SDL_FRect rc;
-    rc.x = rc.y = 0;
-    rc.w = rc.h = 2048;
-    int scale = 4;
+
+	float pixelWidth = (float)(xRes * 3) / xRes;
+	float pixelHeight = (float)(yRes * 3) / yRes;
 
     for (size_t lineNum = 0; lineNum < yRes; lineNum++) {
         for (size_t x = 0; x < xRes; x++) {
-            rc.x = x * scale;
-            rc.y = lineNum * scale;
-            rc.w = scale;
-            rc.h = scale;
+            rc.w = pixelWidth;
+            rc.h = pixelHeight;
+            rc.x = x * rc.w;
+            rc.y = lineNum * rc.h;
             uint32_t color = videoBuffer[x + (lineNum * xRes)];
             uint8_t r = (color & (0xFF << 4)) >> 4;
             uint8_t g = (color & (0xFF << 2)) >> 2;
             uint8_t b = (color & 0xFF);
+
 
             SDL_SetRenderDrawColor(renderer, r, g, b, SDL_ALPHA_OPAQUE);
             SDL_RenderFillRect(renderer, &rc);
@@ -321,12 +324,12 @@ void ppuTick() {
             pxFetcher.FetchX = 0;
             pxFetcher.PushedX = 0;
             pxFetcher.FifoX = 0;
+        }
 
-            if (ppu.LineTicks == 1) {
-                ppu.LineSprites = 0;
-                ppu.LineSpriteCount = 0;
-                loadLineSprites();
-            }
+        if (ppu.LineTicks == 1) {
+            ppu.LineSprites = 0;
+            ppu.LineSpriteCount = 0;
+            loadLineSprites();
         }
         break;
     case MODE_XFER:

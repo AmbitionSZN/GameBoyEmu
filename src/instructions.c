@@ -2,6 +2,7 @@
 #include "bus.h"
 #include "cart.h"
 #include "cpu.h"
+#include "emu.h"
 #include "stack.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -34,6 +35,7 @@ void JP() {
         uint16_t lo = cpu.InstrData[0];
         uint16_t hi = cpu.InstrData[1];
         cpu.Regs.PC = lo | (hi << 8);
+		emuCycles(1);
     }
 }
 
@@ -79,11 +81,13 @@ void CALL() {
     case DT_A16:
         stackPush16(*pc);
         *pc = (lo | (hi << 8));
+		emuCycles(3);
         break;
     case DT_CC_Z ... DT_CC_NC:
         if (CheckCondition(cpu.CurInstr->Operand1)) {
             stackPush16(*pc);
             *pc = (lo | (hi << 8));
+			emuCycles(3);
         }
         break;
     default:
@@ -96,11 +100,14 @@ void RET() {
     switch (cpu.CurInstr->Operand1) {
     case DT_NONE: {
         writeRegisterU16(DT_PC, stackPop16());
+			emuCycles(4);
         break;
     }
     case DT_CC_Z ... DT_CC_NC:
         if (CheckCondition(cpu.CurInstr->Operand1)) {
             writeRegisterU16(DT_PC, stackPop16());
+			emuCycles(3);
+
         }
         break;
     default:
@@ -112,6 +119,7 @@ void RET() {
 void RETI() {
     EI();
     writeRegisterU16(DT_PC, stackPop16());
+	emuCycles(3);
 }
 
 void DI() { cpu.IMEFlag = false; }
@@ -655,6 +663,7 @@ void RST() {
     CPURegisters *regs = &cpu.Regs;
     stackPush16(regs->PC);
     regs->PC = op1Read();
+	emuCycles(3);
 }
 
 void DAA() {

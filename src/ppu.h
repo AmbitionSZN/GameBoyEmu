@@ -81,6 +81,7 @@ void renderTile(SDL_Renderer *renderer, int winW, int winH, int x, int y,
                 uint8_t *tileData);
 void renderTiles(SDL_Renderer *renderer, int winW, int winH);
 void render(SDL_Renderer *render);
+void testRender(SDL_Renderer *render, int winH, int winW);
 void lcdInit();
 void ppuTick();
 void updatePalette(uint8_t palette_data, uint8_t pal);
