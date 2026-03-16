@@ -46,12 +46,12 @@ void PUSH() {
         stackPush(regs->A);
         emuCycles(1);
         stackPush(regs->F);
-        emuCycles(1);
+        emuCycles(2);
         break;
     }
     case DT_BC ... DT_HL: {
         stackPush16(readRegisterU16(cpu.CurInstr->Operand1));
-        emuCycles(2);
+        emuCycles(3);
         break;
     }
     default:
@@ -106,14 +106,14 @@ void RET() {
     switch (cpu.CurInstr->Operand1) {
     case DT_NONE: {
         writeRegisterU16(DT_PC, stackPop16());
-        emuCycles(3);
+        emuCycles(2);
         break;
     }
     case DT_CC_Z ... DT_CC_NC:
         emuCycles(1);
         if (CheckCondition(cpu.CurInstr->Operand1)) {
             writeRegisterU16(DT_PC, stackPop16());
-            emuCycles(3);
+            emuCycles(2);
         }
         break;
     default:
@@ -216,6 +216,7 @@ void DEC() {
         uint16_t data = readRegisterU16(instr->Operand1);
         data -= 1;
         writeRegisterU16(instr->Operand1, data);
+		emuCycles(1);
     } else {
         uint8_t op1 = op1Read();
         if ((int)(op1 & 0xF) - 1 < 0) {
@@ -240,6 +241,7 @@ void INC() {
         uint16_t data = readRegisterU16(cpu.CurInstr->Operand1);
         data += 1;
         writeRegisterU16(cpu.CurInstr->Operand1, data);
+		emuCycles(1);
     } else {
         uint8_t val = op1Read();
         regs->F = (regs->F & FLAG_C) | ((val & 0xF) + 1 > 0xF ? FLAG_H : 0);
@@ -284,6 +286,7 @@ void ADD() {
             regs->F &= ~FLAG_C;
         }
         regs->F &= ~FLAG_N;
+		emuCycles(1);
         break;
     }
 
@@ -670,7 +673,9 @@ void SET() {
 void RST() {
     CPURegisters *regs = &cpu.Regs;
     stackPush16(regs->PC);
+	emuCycles(2);
     regs->PC = op1Read();
+	emuCycles(1);
 }
 
 void DAA() {

@@ -919,48 +919,40 @@ uint16_t readOperand(DataType op) {
     case DT_A_C:
         val = busRead(0xFF00 + regs->C);
         emuCycles(1);
-		break;
+        break;
     case DT_A8:
         val = busRead(0xFF00 + cpu.InstrData[0]);
         emuCycles(1);
-		break;
+        break;
     case DT_A16: {
         uint16_t lo = cpu.InstrData[0];
         uint16_t hi = cpu.InstrData[1];
 
         val = busRead(lo | (hi << 8));
         emuCycles(1);
-		break;
+        break;
     }
     case DT_A_AF ... DT_A_HLD:
         val = busRead(readRegisterU16(op));
         emuCycles(1);
-		break;
+        break;
     default:
         printf("error in readOperand\n");
         printf("Operand: %i\n", op);
         printf("instr: %2.2X\n", instr->Opcode);
         exit(EXIT_FAILURE);
     }
-	return val;
+    return val;
 }
 
-uint16_t getOperandTwo() {
-	return readOperand(cpu.CurInstr->Operand2);
-}
-
-uint16_t op1Read() {
-	return readOperand(cpu.CurInstr->Operand1);
-}
-void op1Write(uint16_t data) {
-    Instruction *instr = cpu.CurInstr;
+void writeOperand(DataType op, uint16_t data) {
     CPURegisters *regs = &cpu.Regs;
-    switch (instr->Operand1) {
+    switch (op) {
     case DT_A ... DT_L:
-        *getRegisterU8(instr->Operand1) = data;
+        *getRegisterU8(op) = data;
         break;
     case DT_AF ... DT_HLD:
-        writeRegisterU16(instr->Operand1, data);
+        writeRegisterU16(op, data);
         break;
     case DT_A_C:
         busWrite(0xFF00 + regs->C, data);
@@ -979,53 +971,28 @@ void op1Write(uint16_t data) {
         break;
     }
     case DT_A_AF ... DT_A_HLD:
-        busWrite(readRegisterU16(instr->Operand1), data);
+        busWrite(readRegisterU16(op), data);
         emuCycles(1);
         break;
     default:
-        printf("OP: %i\n", instr->Operand1);
-        printf("instr: %i\n", instr->Opcode);
-        printf("error in op1Write\n");
+        printf("OP: %i\n", op);
+        printf("instr: %i\n", op);
+        printf("error in writeOperand\n");
         exit(EXIT_FAILURE);
     }
 }
 
-uint16_t op2Read() {
-	return readOperand(cpu.CurInstr->Operand2);
+uint16_t getOperandTwo() { return readOperand(cpu.CurInstr->Operand2); }
+
+uint16_t op1Read() { return readOperand(cpu.CurInstr->Operand1); }
+void op1Write(uint16_t data) {
+	writeOperand(cpu.CurInstr->Operand1, data);
 }
+
+uint16_t op2Read() { return readOperand(cpu.CurInstr->Operand2); }
 
 void op2Write(uint16_t data) {
-    Instruction *instr = cpu.CurInstr;
-    CPURegisters *regs = &cpu.Regs;
-    switch (instr->Operand2) {
-    case DT_A ... DT_L:
-        *getRegisterU8(instr->Operand2) = data;
-        break;
-    case DT_AF ... DT_HLD:
-        writeRegisterU16(instr->Operand2, data);
-        break;
-    case DT_A_C:
-        busWrite(0xFF00 + regs->C, data);
-        break;
-    case DT_A8:
-        busWrite(0xFF00 + cpu.InstrData[0], data);
-        break;
-    case DT_A16: {
-        uint16_t lo = cpu.InstrData[0];
-        uint16_t hi = cpu.InstrData[1];
-
-        busWrite(lo | (hi << 8), data);
-        break;
-    }
-    case DT_A_AF ... DT_A_HLD:
-        busWrite(readRegisterU16(instr->Operand2), data);
-        break;
-    default:
-        printf("OP: %i\n", instr->Operand1);
-        printf("instr: %i\n", instr->Opcode);
-        printf("error in op2Write\n");
-        exit(EXIT_FAILURE);
-    }
+	writeOperand(cpu.CurInstr->Operand2, data);
 }
 
 uint16_t readRegisterU16(DataType reg) {
