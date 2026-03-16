@@ -38,6 +38,8 @@ static uint8_t *const lyc = &memory[0xFF45];
 static uint8_t *const bgPalette = &memory[0xFF47];
 static uint8_t *const objP0 = &memory[0xFF48];
 static uint8_t *const objP1 = &memory[0xFF49];
+static uint8_t *const winY = &memory[0xFF4A];
+static uint8_t *const winX = &memory[0xFF4B];
 static const uint32_t colorsDefault[4] = {0xFFFFFFFF, 0xFFAAAAAA, 0xFF555555,
                                           0xFF000000};
 static uint32_t bgColors[4];
@@ -53,6 +55,7 @@ void ppuInit() {
     ppu.CurrentFrame = 0;
     ppu.LineTicks = 0;
     ppu.LineSprites = 0;
+    ppu.WindowLine = 0;
     ppu.FetchedEntryCount = 0;
 
     pxFetcher.State = FS_GET_TILE;
@@ -62,6 +65,34 @@ void ppuInit() {
     fifo.Size = 0;
     lcdInit();
     lcdsModeSet(MODE_OAM);
+}
+
+bool windowVisible() {
+    return (*lcdc & LCDC_WINDOW_ENABLE) && *winX <= 166 && *winY < yRes;
+}
+
+void loadWindowTile() {
+    if (!windowVisible()) {
+        return;
+    }
+    exit(0);
+
+    if (pxFetcher.FetchX + 7 >= *winX &&
+        pxFetcher.FetchX + 7u < *winX + yRes + 14u) {
+        if (*ly >= *winY && *ly < *winY + xRes) {
+            uint8_t wTileY = ppu.WindowLine / 8;
+
+            pxFetcher.BgWFetchData[0] =
+                busRead((*lcdc & LCDC_BG_TILE_MAP)
+                            ? 0x9C00
+                            : 0x9800 + ((pxFetcher.FetchX + 7 - *winX) / 8) +
+                                  (wTileY * 32));
+
+            if ((*lcdc & LCDC_BGW_TILE_DATA) ? 0x8000 : 0x8800 == 0x8800) {
+                pxFetcher.BgWFetchData[0] += 128;
+            }
+        }
+    }
 }
 
 void loadLineSprites() {
@@ -258,13 +289,11 @@ void renderTiles(SDL_Renderer *renderer, int winW, int winH) {
     }
 }
 
-
-
 void render(SDL_Renderer *renderer) {
     SDL_FRect rc;
 
-	float pixelWidth = (float)(xRes * 3) / xRes;
-	float pixelHeight = (float)(yRes * 3) / yRes;
+    float pixelWidth = (float)(xRes * 3) / xRes;
+    float pixelHeight = (float)(yRes * 3) / yRes;
 
     for (size_t lineNum = 0; lineNum < yRes; lineNum++) {
         for (size_t x = 0; x < xRes; x++) {
@@ -276,7 +305,6 @@ void render(SDL_Renderer *renderer) {
             uint8_t r = (color & (0xFF << 4)) >> 4;
             uint8_t g = (color & (0xFF << 2)) >> 2;
             uint8_t b = (color & 0xFF);
-
 
             SDL_SetRenderDrawColor(renderer, r, g, b, SDL_ALPHA_OPAQUE);
             SDL_RenderFillRect(renderer, &rc);
@@ -298,6 +326,10 @@ void lcdInit() {
 }
 
 void incrementLy() {
+    if (windowVisible() && *ly >= *winY && *ly < *winY + yRes) {
+        ppu.WindowLine++;
+    }
+
     *ly += 1;
 
     if (*ly == *lyc) {
@@ -348,6 +380,7 @@ void ppuTick() {
             if (*ly >= linesPerFrame) {
                 lcdsModeSet(MODE_OAM);
                 *ly = 0;
+                ppu.WindowLine = 0;
             }
             ppu.LineTicks = 0;
         }
@@ -482,6 +515,7 @@ lcd_get_context()->lcds |= mode; }
             if (((*lcdc & LCDC_BGW_TILE_DATA) ? 0x8000 : 0x8800) == 0x8800) {
                 pxFetcher.BgWFetchData[0] += 128;
             }
+            loadWindowTile();
         }
         if ((*lcdc & LCDC_OBJ_ENABLE) && ppu.LineSprites) {
             loadSpriteTile();

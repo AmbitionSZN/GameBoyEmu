@@ -35,7 +35,7 @@ void JP() {
         uint16_t lo = cpu.InstrData[0];
         uint16_t hi = cpu.InstrData[1];
         cpu.Regs.PC = lo | (hi << 8);
-		emuCycles(1);
+        emuCycles(1);
     }
 }
 
@@ -44,11 +44,14 @@ void PUSH() {
     switch (cpu.CurInstr->Operand1) {
     case DT_AF: {
         stackPush(regs->A);
+        emuCycles(1);
         stackPush(regs->F);
+        emuCycles(1);
         break;
     }
     case DT_BC ... DT_HL: {
         stackPush16(readRegisterU16(cpu.CurInstr->Operand1));
+        emuCycles(2);
         break;
     }
     default:
@@ -62,9 +65,11 @@ void POP() {
     switch (cpu.CurInstr->Operand1) {
     case DT_AF:
         writeRegisterU16(DT_AF, n & 0xFFF0);
+        emuCycles(2);
         break;
     case DT_BC ... DT_HL: {
         writeRegisterU16(cpu.CurInstr->Operand1, n);
+        emuCycles(2);
         break;
     }
     default:
@@ -81,13 +86,13 @@ void CALL() {
     case DT_A16:
         stackPush16(*pc);
         *pc = (lo | (hi << 8));
-		emuCycles(3);
+        emuCycles(3);
         break;
     case DT_CC_Z ... DT_CC_NC:
         if (CheckCondition(cpu.CurInstr->Operand1)) {
             stackPush16(*pc);
             *pc = (lo | (hi << 8));
-			emuCycles(3);
+            emuCycles(3);
         }
         break;
     default:
@@ -97,17 +102,18 @@ void CALL() {
 }
 
 void RET() {
+    emuCycles(1);
     switch (cpu.CurInstr->Operand1) {
     case DT_NONE: {
         writeRegisterU16(DT_PC, stackPop16());
-			emuCycles(4);
+        emuCycles(3);
         break;
     }
     case DT_CC_Z ... DT_CC_NC:
+        emuCycles(1);
         if (CheckCondition(cpu.CurInstr->Operand1)) {
             writeRegisterU16(DT_PC, stackPop16());
-			emuCycles(3);
-
+            emuCycles(3);
         }
         break;
     default:
@@ -119,7 +125,7 @@ void RET() {
 void RETI() {
     EI();
     writeRegisterU16(DT_PC, stackPop16());
-	emuCycles(3);
+    emuCycles(3);
 }
 
 void DI() { cpu.IMEFlag = false; }
@@ -200,7 +206,7 @@ void LD() {
     }
 }
 
-void LDH() { op1Write(getOperandTwo()); }
+void LDH() { op1Write(op2Read()); }
 
 void DEC() {
     Instruction *instr = cpu.CurInstr;
@@ -363,10 +369,12 @@ void JR() {
     switch (instr->Operand1) {
     case DT_E8:
         cpu.Regs.PC += data;
+        emuCycles(1);
         break;
     case DT_CC_Z ... DT_CC_NC:
         if (CheckCondition(instr->Operand1)) {
             cpu.Regs.PC += data;
+            emuCycles(1);
         }
         break;
     default:
@@ -663,7 +671,6 @@ void RST() {
     CPURegisters *regs = &cpu.Regs;
     stackPush16(regs->PC);
     regs->PC = op1Read();
-	emuCycles(3);
 }
 
 void DAA() {
@@ -694,4 +701,7 @@ void DAA() {
     regs->F &= ~FLAG_H;
 }
 
-void STOP() {}
+void STOP() {
+    printf("stop instruction not implemented\n");
+    exit(0);
+}

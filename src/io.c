@@ -10,7 +10,7 @@ extern uint8_t memory[0x10000];
 
 DMA dma;
 
-static uint16_t div = 0xAC00;
+static uint16_t div = 0xABCC;
 static uint8_t *const tima = &memory[0xFF05];
 static uint8_t *const tma = &memory[0xFF06];
 static uint8_t *const tac = &memory[0xFF07];
@@ -64,11 +64,12 @@ void timerTick() {
     }
 
     if (timerUpdate && *tac & (1 << 2)) {
-        *tima += 1;
 
         if (*tima == 0xFF) {
             *tima = *tma;
             requestInterrupt(INT_TIMER);
+        } else {
+            *tima += 1;
         }
     }
 }

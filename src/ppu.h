@@ -50,6 +50,7 @@ typedef struct _OamLineEntry {
 typedef struct {
     uint32_t CurrentFrame;
     uint32_t LineTicks;
+	uint8_t WindowLine;
 	OamLineEntry *LineSprites;
 	OamLineEntry LineEntryArray[10];
 	ObjAttribute FetchedEntries[3];

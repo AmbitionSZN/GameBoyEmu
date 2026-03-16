@@ -18,6 +18,9 @@ extern uint8_t memory[0x10000];
 extern FILE *logFile;
 
 Instruction instructions[512];
+// debug variable to verify the correct number of cpu cycles pass for each
+// instruction
+uint8_t cyclesTaken = 0;
 
 DataType getOperandType(cJSON *operand, char *mnemonic, uint8_t opcode) {
     char *op = operand->child->valuestring;
@@ -469,9 +472,10 @@ void gbDoctorPrint(FILE *fptr) {
 void fetchInstruction() {
     uint16_t opcode = busRead(cpu.Regs.PC);
     if (opcode == 0xCB) {
+        emuCycles(1);
         cpu.Regs.PC++;
-		opcode = busRead(cpu.Regs.PC);
-		opcode += 0x100;
+        opcode = busRead(cpu.Regs.PC);
+        opcode += 0x100;
         cpu.CurInstr = &instructions[opcode];
         emuCycles(1);
     } else {
@@ -649,21 +653,21 @@ void execute() {
     case MNEM_RST:
         RST();
         break;
-	case MNEM_BIT:
-		BIT();
-		break;
-	case MNEM_RES:
-		RES();
-		break;
-	case MNEM_SET:
-		SET();
-		break;
+    case MNEM_BIT:
+        BIT();
+        break;
+    case MNEM_RES:
+        RES();
+        break;
+    case MNEM_SET:
+        SET();
+        break;
     case MNEM_DAA:
         DAA();
         break;
-	case MNEM_STOP:
-		STOP();
-		break;
+    case MNEM_STOP:
+        STOP();
+        break;
     default:
         printf("Instruction not implemented:\n");
         printf("\tOpcode: %2.2X\n", cpu.CurInstr->Opcode);
@@ -728,11 +732,23 @@ void cpuStep() {
         printInstrs(false);
         fetchData();
         execute();
-    //    gbPrint();
+        //    gbPrint();
+        if (cpu.CurInstr->Cycles[0] != cyclesTaken) {
+            if (cpu.CurInstr->Cycles[1] != 0) {
+                // not currently testing instructions that take a variable num
+                // of cycles
+            } else {
+                printf("Incorrect number of cpu cycles\n %u cycles taken\n "
+                       "Expected %u\n",
+                       cyclesTaken, cpu.CurInstr->Cycles[0]);
+                gbPrint();
+                exit(0);
+            }
+        }
+        cyclesTaken = 0;
         gbDoctorPrint(logFile);
         dbgUpdate();
-
-     //        dbgPrint();
+        dbgPrint();
 
     } else {
         emuCycles(1);
@@ -850,14 +866,15 @@ uint16_t getOperand(DataType op) {
     }
 }
 
-uint16_t getOperandTwo() {
+uint16_t readOperand(DataType op) {
     Instruction *instr = cpu.CurInstr;
     CPURegisters *regs = &cpu.Regs;
-    switch (instr->Operand2) {
+    uint16_t val;
+    switch (op) {
     case DT_A ... DT_L:
-        return *getRegisterU8(instr->Operand2);
+        return *getRegisterU8(op);
     case DT_AF ... DT_HLD:
-        return readRegisterU16(instr->Operand2);
+        return readRegisterU16(op);
     case DT_N8:
         return cpu.InstrData[0];
     case DT_N16: {
@@ -867,8 +884,26 @@ uint16_t getOperandTwo() {
     }
     case DT_E8:
         return cpu.InstrData[0];
+    case DT_U3_0:
+        return 0;
+    case DT_U3_1:
+        return 1;
+    case DT_U3_2:
+        return 2;
+    case DT_U3_3:
+        return 3;
+    case DT_U3_4:
+        return 4;
+    case DT_U3_5:
+        return 5;
+    case DT_U3_6:
+        return 6;
+    case DT_U3_7:
+        return 7;
     case DT_RST0:
         return 0;
+    case DT_RST8:
+        return 0x8;
     case DT_RST10:
         return 0x10;
     case DT_RST18:
@@ -882,92 +917,40 @@ uint16_t getOperandTwo() {
     case DT_RST38:
         return 0x38;
     case DT_A_C:
-        return busRead(0xFF00 + regs->C);
+        val = busRead(0xFF00 + regs->C);
+        emuCycles(1);
+		break;
     case DT_A8:
-        return busRead(0xFF00 + cpu.InstrData[0]);
+        val = busRead(0xFF00 + cpu.InstrData[0]);
+        emuCycles(1);
+		break;
     case DT_A16: {
         uint16_t lo = cpu.InstrData[0];
         uint16_t hi = cpu.InstrData[1];
 
-        return busRead(lo | (hi << 8));
+        val = busRead(lo | (hi << 8));
+        emuCycles(1);
+		break;
     }
     case DT_A_AF ... DT_A_HLD:
-        return busRead(readRegisterU16(instr->Operand2));
+        val = busRead(readRegisterU16(op));
+        emuCycles(1);
+		break;
     default:
-        printf("OP: %i\n", instr->Operand2);
-        printf("instr: %i\n", instr->Opcode);
-        printf("error in getOperandTwo\n");
+        printf("error in readOperand\n");
+        printf("Operand: %i\n", op);
+        printf("instr: %2.2X\n", instr->Opcode);
         exit(EXIT_FAILURE);
     }
+	return val;
+}
+
+uint16_t getOperandTwo() {
+	return readOperand(cpu.CurInstr->Operand2);
 }
 
 uint16_t op1Read() {
-    Instruction *instr = cpu.CurInstr;
-    CPURegisters *regs = &cpu.Regs;
-    switch (instr->Operand1) {
-    case DT_A ... DT_L:
-        return *getRegisterU8(instr->Operand1);
-    case DT_AF ... DT_HLD:
-        return readRegisterU16(instr->Operand1);
-    case DT_N8:
-        return cpu.InstrData[0];
-    case DT_N16: {
-        uint16_t lo = cpu.InstrData[0];
-        uint16_t hi = cpu.InstrData[1];
-        return (lo | (hi << 8));
-    }
-    case DT_E8:
-        return cpu.InstrData[0];
-	case DT_U3_0:
-			return 0;
-	case DT_U3_1:
-			return 1;
-	case DT_U3_2:
-			return 2;
-	case DT_U3_3:
-			return 3;
-	case DT_U3_4:
-			return 4;
-	case DT_U3_5:
-			return 5;
-	case DT_U3_6:
-			return 6;
-	case DT_U3_7:
-			return 7;
-    case DT_RST0:
-        return 0;
-	case DT_RST8:
-			return 0x8;
-    case DT_RST10:
-        return 0x10;
-    case DT_RST18:
-        return 0x18;
-    case DT_RST20:
-        return 0x20;
-    case DT_RST28:
-        return 0x28;
-    case DT_RST30:
-        return 0x30;
-    case DT_RST38:
-        return 0x38;
-    case DT_A_C:
-        return busRead(0xFF00 + regs->C);
-    case DT_A8:
-        return busRead(0xFF00 + cpu.InstrData[0]);
-    case DT_A16: {
-        uint16_t lo = cpu.InstrData[0];
-        uint16_t hi = cpu.InstrData[1];
-
-        return busRead(lo | (hi << 8));
-    }
-    case DT_A_AF ... DT_A_HLD:
-        return busRead(readRegisterU16(instr->Operand1));
-    default:
-        printf("Operand: %i\n", instr->Operand1);
-        printf("instr: %2.2X\n", instr->Opcode);
-        printf("error in op1Read\n");
-        exit(EXIT_FAILURE);
-    }
+	return readOperand(cpu.CurInstr->Operand1);
 }
 void op1Write(uint16_t data) {
     Instruction *instr = cpu.CurInstr;
@@ -981,19 +964,23 @@ void op1Write(uint16_t data) {
         break;
     case DT_A_C:
         busWrite(0xFF00 + regs->C, data);
+        emuCycles(1);
         break;
     case DT_A8:
         busWrite(0xFF00 + cpu.InstrData[0], data);
+        emuCycles(1);
         break;
     case DT_A16: {
         uint16_t lo = cpu.InstrData[0];
         uint16_t hi = cpu.InstrData[1];
 
         busWrite(lo | (hi << 8), data);
+        emuCycles(1);
         break;
     }
     case DT_A_AF ... DT_A_HLD:
         busWrite(readRegisterU16(instr->Operand1), data);
+        emuCycles(1);
         break;
     default:
         printf("OP: %i\n", instr->Operand1);
@@ -1004,54 +991,7 @@ void op1Write(uint16_t data) {
 }
 
 uint16_t op2Read() {
-    Instruction *instr = cpu.CurInstr;
-    CPURegisters *regs = &cpu.Regs;
-    switch (instr->Operand2) {
-    case DT_A ... DT_L:
-        return *getRegisterU8(instr->Operand2);
-    case DT_AF ... DT_HLD:
-        return readRegisterU16(instr->Operand2);
-    case DT_N8:
-        return cpu.InstrData[0];
-    case DT_N16: {
-        uint16_t lo = cpu.InstrData[0];
-        uint16_t hi = cpu.InstrData[1];
-        return (lo | (hi << 8));
-    }
-    case DT_E8:
-        return cpu.InstrData[0];
-    case DT_RST0:
-        return 0;
-    case DT_RST10:
-        return 0x10;
-    case DT_RST18:
-        return 0x18;
-    case DT_RST20:
-        return 0x20;
-    case DT_RST28:
-        return 0x28;
-    case DT_RST30:
-        return 0x30;
-    case DT_RST38:
-        return 0x38;
-    case DT_A_C:
-        return busRead(0xFF00 + regs->C);
-    case DT_A8:
-        return busRead(0xFF00 + cpu.InstrData[0]);
-    case DT_A16: {
-        uint16_t lo = cpu.InstrData[0];
-        uint16_t hi = cpu.InstrData[1];
-
-        return busRead(lo | (hi << 8));
-    }
-    case DT_A_AF ... DT_A_HLD:
-        return busRead(readRegisterU16(instr->Operand2));
-    default:
-        printf("OP: %i\n", instr->Operand2);
-        printf("instr: %i\n", instr->Opcode);
-        printf("error in op2Read\n");
-        exit(EXIT_FAILURE);
-    }
+	return readOperand(cpu.CurInstr->Operand2);
 }
 
 void op2Write(uint16_t data) {
