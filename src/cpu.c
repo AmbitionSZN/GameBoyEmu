@@ -735,6 +735,14 @@ void cpuStep() {
         //    gbPrint();
         if (cpu.CurInstr->Cycles[0] != cyclesTaken) {
             if (cpu.CurInstr->Cycles[1] != 0) {
+                if (cpu.CurInstr->Cycles[1] != cyclesTaken) {
+                    printf("Incorrect number of cpu cycles\n %u cycles taken, "
+                           "Expected %u\n",
+                           cyclesTaken, cpu.CurInstr->Cycles[1]);
+                    gbPrint();
+                    exit(EXIT_FAILURE);
+                } else {
+                }
                 // not currently testing instructions that take a variable num
                 // of cycles
             } else {
@@ -742,7 +750,7 @@ void cpuStep() {
                        "Expected %u\n",
                        cyclesTaken, cpu.CurInstr->Cycles[0]);
                 gbPrint();
-                exit(0);
+                exit(EXIT_FAILURE);
             }
         }
         cyclesTaken = 0;
@@ -985,15 +993,11 @@ void writeOperand(DataType op, uint16_t data) {
 uint16_t getOperandTwo() { return readOperand(cpu.CurInstr->Operand2); }
 
 uint16_t op1Read() { return readOperand(cpu.CurInstr->Operand1); }
-void op1Write(uint16_t data) {
-	writeOperand(cpu.CurInstr->Operand1, data);
-}
+void op1Write(uint16_t data) { writeOperand(cpu.CurInstr->Operand1, data); }
 
 uint16_t op2Read() { return readOperand(cpu.CurInstr->Operand2); }
 
-void op2Write(uint16_t data) {
-	writeOperand(cpu.CurInstr->Operand2, data);
-}
+void op2Write(uint16_t data) { writeOperand(cpu.CurInstr->Operand2, data); }
 
 uint16_t readRegisterU16(DataType reg) {
     CPURegisters *regs = &cpu.Regs;

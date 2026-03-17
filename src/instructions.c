@@ -110,10 +110,9 @@ void RET() {
         break;
     }
     case DT_CC_Z ... DT_CC_NC:
-        emuCycles(1);
         if (CheckCondition(cpu.CurInstr->Operand1)) {
             writeRegisterU16(DT_PC, stackPop16());
-            emuCycles(2);
+            emuCycles(3);
         }
         break;
     default:

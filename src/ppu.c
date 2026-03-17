@@ -75,7 +75,6 @@ void loadWindowTile() {
     if (!windowVisible()) {
         return;
     }
-    exit(0);
 
     if (pxFetcher.FetchX + 7 >= *winX &&
         pxFetcher.FetchX + 7u < *winX + yRes + 14u) {
