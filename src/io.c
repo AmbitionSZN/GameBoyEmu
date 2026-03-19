@@ -90,7 +90,7 @@ void DMAStart(uint8_t start) {
 	dma.Offset = 0;
 }
 
-void DMATransfer(uint16_t dest, uint16_t src) { busWrite(dest, busRead(src)); }
+void DMATransfer(uint16_t dest, uint16_t src) { memory[dest] = busRead(src); }
 
 void DMATick() {
     if (!dma.Active) {
