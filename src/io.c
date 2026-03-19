@@ -4,6 +4,7 @@
 #include "ppu.h"
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <unistd.h>
 
 extern uint8_t memory[0x10000];
@@ -64,13 +65,20 @@ void timerTick() {
     }
 
     if (timerUpdate && *tac & (1 << 2)) {
+            *tima += 1;
+        if (*tima == 0xFF) {
+            *tima = *tma;
 
+            requestInterrupt(INT_TIMER);
+        }
+/*
         if (*tima == 0xFF) {
             *tima = *tma;
             requestInterrupt(INT_TIMER);
         } else {
             *tima += 1;
         }
+*/
     }
 }
 
@@ -79,6 +87,7 @@ void DMAStart(uint8_t start) {
     dma.StartDelay = 2;
     dma.Dest = 0xFE00;
     dma.Src = start * 0x100;
+	dma.Offset = 0;
 }
 
 void DMATransfer(uint16_t dest, uint16_t src) { busWrite(dest, busRead(src)); }
@@ -93,11 +102,11 @@ void DMATick() {
         return;
     }
 
-    DMATransfer(dma.Dest, dma.Src);
+    DMATransfer(dma.Dest + dma.Offset, dma.Src + dma.Offset);
 
-    dma.Dest++;
+	dma.Offset++;
 
-    dma.Active = dma.Dest < 0xFEA0;
+    dma.Active = dma.Offset < 0xA0;
 }
 
 void lcdWrite(uint16_t address, uint8_t value) {

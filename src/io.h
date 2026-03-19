@@ -6,6 +6,7 @@ typedef struct {
     bool Active;
     uint16_t Dest;
     uint16_t Src;
+	uint16_t Offset;
     uint8_t StartDelay;
 } DMA;
 

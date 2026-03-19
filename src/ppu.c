@@ -81,10 +81,11 @@ void loadWindowTile() {
         if (*ly >= *winY && *ly < *winY + xRes) {
             uint8_t wTileY = ppu.WindowLine / 8;
 
-            pxFetcher.BgWFetchData[0] =
-                busRead((*lcdc & LCDC_BG_TILE_MAP)
+			uint16_t tileMap = (*lcdc & LCDC_WINDOW_TILE_MAP)
                             ? 0x9C00
-                            : 0x9800 + ((pxFetcher.FetchX + 7 - *winX) / 8) +
+                            : 0x9800; 
+            pxFetcher.BgWFetchData[0] =
+                busRead(tileMap + ((pxFetcher.FetchX + 7 - *winX) / 8) +
                                   (wTileY * 32));
 
             if ((*lcdc & LCDC_BGW_TILE_DATA) ? 0x8000 : 0x8800 == 0x8800) {
@@ -114,6 +115,7 @@ void loadLineSprites() {
             // max 10 sprites per line...
             break;
         }
+
 
         if (obj.Y <= curY + 16 && obj.Y + spriteSize > curY + 16) {
             // this sprite is on the current line.
@@ -209,7 +211,6 @@ void loadSpriteTile() {
         if ((spriteX >= pxFetcher.FetchX && spriteX < pxFetcher.FetchX + 8) ||
             ((spriteX + 8) >= pxFetcher.FetchX &&
              (spriteX + 8) < pxFetcher.FetchX + 8)) {
-            // need to add entry
             ppu.FetchedEntries[ppu.FetchedEntryCount++] = le->Obj;
         }
 
@@ -516,7 +517,10 @@ lcd_get_context()->lcds |= mode; }
             }
             loadWindowTile();
         }
+			if (ppu.LineSprites) {
+			}
         if ((*lcdc & LCDC_OBJ_ENABLE) && ppu.LineSprites) {
+			printf("loadSpriteTile was called\n");
             loadSpriteTile();
         }
         pxFetcher.State = FS_DATA_LOW;

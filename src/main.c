@@ -10,7 +10,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-Emulator emu;
+Emulator emu = {0};
 CPU cpu = {0};
 uint8_t memory[0x10000] = {0};
 Cartridge cart;
