@@ -517,10 +517,8 @@ lcd_get_context()->lcds |= mode; }
             }
             loadWindowTile();
         }
-			if (ppu.LineSprites) {
-			}
+
         if ((*lcdc & LCDC_OBJ_ENABLE) && ppu.LineSprites) {
-			printf("loadSpriteTile was called\n");
             loadSpriteTile();
         }
         pxFetcher.State = FS_DATA_LOW;

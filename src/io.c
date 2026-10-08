@@ -4,7 +4,6 @@
 #include "ppu.h"
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <unistd.h>
 
 extern uint8_t memory[0x10000];
